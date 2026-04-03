@@ -1,0 +1,41 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "vitest run",
+    "build": "npm run build:api && npm run build:delete-worker && npm run build:stream-processor && npm run build:notification",
+    "build:api": "esbuild functions/api.ts --bundle --platform=node --target=es2022 --outfile=dist/api/api.js --external:@aws-sdk/* --minify --sourcemap",
+    "build:delete-worker": "esbuild functions/delete-worker.ts --bundle --platform=node --target=es2022 --outfile=dist/delete-worker/delete-worker.js --external:@aws-sdk/* --minify --sourcemap",
+    "build:stream-processor": "esbuild functions/stream-processor.ts --bundle --platform=node --target=es2022 --outfile=dist/stream-processor/stream-processor.js --external:@aws-sdk/* --minify --sourcemap",
+    "build:notification": "esbuild functions/notification.ts --bundle --platform=node --target=es2022 --outfile=dist/notification/notification.js --external:@aws-sdk/* --minify --sourcemap"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.1009.0",
+    "@aws-sdk/client-dynamodb": "^3.1009.0",
+    "@aws-sdk/client-kms": "^3.1009.0",
+    "@aws-sdk/client-ses": "^3.1009.0",
+    "@aws-sdk/client-sns": "^3.1009.0",
+    "@aws-sdk/client-sqs": "^3.1009.0",
+    "@aws-sdk/client-ssm": "^3.1009.0",
+    "@aws-sdk/lib-dynamodb": "^3.1009.0",
+    "@hono/zod-validator": "^0.7.6",
+    "bcryptjs": "^3.0.3",
+    "hono": "^4.12.7",
+    "nanoid": "^5.1.6",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.161",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^25.5.0",
+    "esbuild": "^0.27.4",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.2"
+  }
+}

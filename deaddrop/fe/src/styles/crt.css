@@ -1,0 +1,44 @@
+/* ============================================
+   CRT Scanline Overlay & Flicker Effect
+   ============================================ */
+
+.crt-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+
+  /* Scanlines */
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.15) 0px,
+    rgba(0, 0, 0, 0.15) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+
+  /* Flicker animation */
+  animation: crt-flicker 8s infinite;
+}
+
+@keyframes crt-flicker {
+  0%    { opacity: 0.97; }
+  5%    { opacity: 0.95; }
+  10%   { opacity: 0.98; }
+  15%   { opacity: 0.96; }
+  20%   { opacity: 0.97; }
+  50%   { opacity: 0.98; }
+  80%   { opacity: 0.96; }
+  85%   { opacity: 0.99; }
+  90%   { opacity: 0.95; }
+  95%   { opacity: 0.98; }
+  100%  { opacity: 0.97; }
+}
+
+/* Respect user preference for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .crt-overlay {
+    animation: none;
+    opacity: 0.97;
+  }
+}

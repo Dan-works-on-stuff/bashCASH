@@ -1,0 +1,40 @@
+name: Deploy Infrastructure
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Terraform Apply
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+
+      - name: Terraform Init
+        working-directory: terraform
+        run: |
+          terraform init
+          terraform state rm aws_route53_zone.main_hosted_zone || true
+
+      - name: Terraform Apply
+        working-directory: terraform
+        run: terraform apply -auto-approve

@@ -1,0 +1,49 @@
+/* ============================================
+   Shared Keyframes & Animation Utilities
+   ============================================ */
+
+/* Cursor blink — terminal-style */
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* Fade in */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Green glow pulse */
+@keyframes glowPulse {
+  0%   { box-shadow: 0 0 4px rgba(0, 255, 65, 0.2); }
+  50%  { box-shadow: 0 0 16px rgba(0, 255, 65, 0.5), 0 0 4px rgba(0, 255, 65, 0.3); }
+  100% { box-shadow: 0 0 4px rgba(0, 255, 65, 0.2); }
+}
+
+/* Utility classes */
+.animate-blink {
+  animation: blink 1s step-end infinite;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease forwards;
+}
+
+.animate-glow-pulse {
+  animation: glowPulse 2s ease-in-out infinite;
+}
+
+/* Respect user preference for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-blink,
+  .animate-fade-in,
+  .animate-glow-pulse {
+    animation: none;
+  }
+
+  .animate-fade-in {
+    opacity: 1;
+    transform: none;
+  }
+}
