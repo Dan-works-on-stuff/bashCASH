@@ -37,7 +37,7 @@ export function CreatePage() {
     <div className="create-page">
       <TerminalText text="CREATE A DEAD DROP" as="h1" speed={40} />
       <p className="subtitle">
-        Encrypt a secret. Share the link. It self-destructs after one view.
+        Encrypt a secret. Share the link. It self-destructs after one view. bambam
       </p>
       <AiPrompt onGenerated={setAiContent} />
       <SecretForm initialContent={aiContent} onSubmit={handleSubmit} />

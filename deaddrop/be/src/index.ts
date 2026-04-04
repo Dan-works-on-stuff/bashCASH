@@ -6,7 +6,7 @@ import { errorHandler } from './middleware/error-handler.js';
 const app = new Hono()
 
 app.use('*', cors());
-app.get('/', (c) => c.json({ message: 'Hello FII Practic 2026!!!!!!' }));
+app.get('/', (c) => c.json({ message: 'Hello FII Practic 2026!!!!!numabile! ' }));
 app.get('/chaos', (c) => {
   throw new Error('Chaos endpoint triggered — this is a deliberate 500');
 });
