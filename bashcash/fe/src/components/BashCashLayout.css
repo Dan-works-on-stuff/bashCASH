@@ -1,0 +1,32 @@
+.bashcash-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
+.bashcash-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-dark);
+}
+.bashcash-header h1 {
+  /*margin: 0;*/
+  font-size: 2rem;
+  color: var(--primary-color);
+  margin-left: 1rem;
+}
+.session-info {
+  font-weight: bold;
+  font-size: 1.5rem;
+  color: var(--primary-color);
+  margin-right: 1rem;
+}
+.bashcash-main {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}

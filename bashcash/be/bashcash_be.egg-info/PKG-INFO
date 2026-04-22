@@ -1,0 +1,9 @@
+Metadata-Version: 2.4
+Name: bashcash-be
+Version: 0.1.0
+Summary: Backend for BashCash
+Requires-Python: >=3.12
+Requires-Dist: fastapi>=0.111.0
+Requires-Dist: uvicorn>=0.30.0
+Requires-Dist: mangum>=0.17.0
+Requires-Dist: pydantic>=2.7.0

@@ -1,0 +1,11 @@
+[project]
+name = "bashcash-be"
+version = "0.1.0"
+description = "Backend for BashCash"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.111.0",
+    "uvicorn>=0.30.0",
+    "mangum>=0.17.0",
+    "pydantic>=2.7.0"
+]
