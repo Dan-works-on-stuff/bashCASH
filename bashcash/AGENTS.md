@@ -8,39 +8,62 @@ A serverless Single-Page Application (SPA) providing a gamified, simulated POSIX
 ### Frontend (`/bashcash/fe`)
 - **Framework:** React 19, TypeScript, Vite.
 - **Hosting:** Hosted on AWS S3, distributed via AWS CloudFront.
-- **Terminal Emulator:** `xterm.js` for intercepting keystrokes and rendering the terminal UI.
-- **Visual File Tree:** A React-based visual map of the current VFS representing files/folders (replaces backend Graphviz generation).
-- **State Management:** Local React state handles the VFS traversal and command simulation (intercepting `cd`, `ls`, `cat`) without backend calls.
+- **Terminal Emulator:** `@xterm/xterm` + `@xterm/addon-fit` for rendering terminal UI and handling input.
+- **Visual File Tree:** React recursive tree renderer (`VfsTree`) showing folders/files from parsed VFS JSON.
+- **State Management:** Local React state handles uploaded VFS, current path, terminal command execution.
 
 ### Backend (`/bashcash/be`)
-- **Runtime & Hosting:** Python 3.12, AWS Lambda, Amazon API Gateway.
-- **VFS Generator:** Pure Python functions utilizing `zipfile` to parse Base64 payloads into JSON graph representations.
-- **Database:** Amazon DynamoDB.
+- **Runtime & Hosting:** Python 3.12, FastAPI, Mangum (Lambda adapter), Amazon API Gateway.
+- **VFS Generator:** Pure Python using `zipfile` + `io.BytesIO` + Base64 payload decoding to create VFS JSON.
+- **Database (planned):** Amazon DynamoDB.
   - **Design:** Single-table design.
-  - **Partition Key:** `session_id` (UUIDv4 generated on the frontend).
-  - **Attributes:** `cash_balance` (Number), `ttl` (Time-to-Live epoch).
+  - **Partition Key:** `session_id` (UUIDv4 generated on frontend).
+  - **Attributes:** `cash_balance` (Number), `ttl` (epoch).
 
-### AI Integration
-- **Service:** AWS Bedrock utilizing Anthropic Claude 3 Haiku.
-- **Function:** Triggered via a custom CLI command (e.g., `bashcash --help <command>`) to provide low-latency, context-aware explanations of POSIX utilities.
+### AI Integration (planned)
+- **Service:** AWS Bedrock using Anthropic Claude 3 Haiku.
+- **Function:** Triggered via terminal helper command pattern (e.g., `bashcash --help <command>`) for low-latency command explanations.
 
-### Infrastructure as Code (`/terraform`)
-- **Tool:** Terraform managers the entire AWS topology, ensuring reproducible deployments of API Gateway, Lambda, DynamoDB, Bedrock permissions, and S3/CloudFront.
+### Infrastructure as Code (`/terraform`) (planned)
+- Terraform will manage API Gateway, Lambda, DynamoDB, Bedrock permissions, S3, and CloudFront.
 
 ## Feature Set
 
-- **In-Memory VFS Generation:** Zero-persistence parsing of user-uploaded `.zip` archives into a JSON-based virtual directory tree. Extracts real file metadata (`size`, `modified` date) to accurately power terminal utilities.
-- **Client-Side Terminal Simulation:** Full client-side execution of safe POSIX commands (`ls`, `cd`, `cat`, `pwd`, `grep`, `touch`, `mkdir`, `rm`) against the VFS using `xterm.js`.
-- **Visual VFS Mapping:** Interactive frontend graph reflecting the current file system and user's working directory.
-- **Stateless Gamification:** Frictionless onboarding using `localStorage` UUIDs mapped to DynamoDB TTL-enabled session records. Atomic counters handle cash increments.
-- **Regex-Based Exercise Validation:** State-machine challenge system where user command outputs are matched against predefined expected regex patterns to trigger cash payouts.
-- **Native AI Tutor:** Integrated command-line assistant using Claude 3 Haiku for sub-second, token-efficient command explanations.
+- **In-Memory VFS Generation:** Upload `.zip` -> parse in backend -> return JSON tree.
+- **Client-Side Terminal Simulation:** Local command handling currently supports MVP commands in frontend utility logic (`pwd`, `ls`, `cd`, `clear`, unknown command handling).
+- **Visual VFS Mapping:** Sidebar tree view is wired to parsed VFS response.
+- **Stateless Gamification (planned):** localStorage UUID + DynamoDB TTL-backed session records.
+- **Regex-Based Exercise Validation (planned):** output matching against challenge regex/state machine.
+- **Native AI Tutor (planned):** Bedrock-backed command explanation endpoint.
 
 ## Current Project Structure & Status
-The project is strictly separated into three main directories under `/bashcash`:
-- `/bashcash/fe`: The React 19 + Vite frontend app. Uses `@xterm/xterm` for terminal rendering. (Bootstrapped and ready, pending interactive map integration).
-- `/bashcash/be`: The Python 3.12 backend app powered by FastAPI/Mangum. (VFS zip-parser implemented with metadata support, endpoints stubbed).
-- `/bashcash/terraform`: Infrastructure as code. (Pending)
+
+The project is separated into three main directories under `/bashcash`:
+
+- `/bashcash/fe` (**Implemented MVP shell + VFS integration**)
+  - Bootstrapped React/Vite app
+  - Upload flow sends Base64 zip payload to backend endpoint
+  - Tree UI renders returned VFS
+  - `TerminalUI` and `utils/vfs.ts` implement local command execution scaffold
+
+- `/bashcash/be` (**Implemented VFS parser endpoint**)
+  - FastAPI app with CORS + Mangum handler
+  - `POST /v1/vfs/parse` implemented
+  - `vfs.py` parses zip and includes file metadata (`size`, `modified`)
+  - `sessions.py` and `ai.py` are placeholders (not implemented)
+
+- `/bashcash/terraform` (**Not started**)
 
 ## API Contracts
-The source-of-truth for backend API definitions (endpoints, request/response schemas) is located at `/bashcash/api-contract.md`. Any new AI agent working on backend routes or frontend API integration MUST consult this file to ensure schemas align.
+Source-of-truth for request/response schemas and endpoint expectations is `bashcash/api-contract.md`.
+Any backend/frontend integration changes must stay aligned with that file.
+
+## Next Priority Tasks
+1. Start Terraform deployment work for `/bashcash/terraform` (infrastructure scaffolding and deployment pipeline planning).
+2. Stabilize terminal behavior and polish command simulation in `fe/src/utils/vfs.ts` + `fe/src/components/TerminalUI.tsx`.
+3. Add support for remaining planned commands (`cat`, `grep`, `touch`, `mkdir`, `rm`) in safe simulated mode.
+4. Implement session endpoints and DynamoDB integration in `be/app/sessions.py`.
+5. Implement Bedrock tutor endpoint in `be/app/ai.py`.
+6. Add tests:
+   - FE unit tests for path resolution + command execution.
+   - BE tests for zip parsing (valid zip, invalid payload, nested dirs, metadata presence).
