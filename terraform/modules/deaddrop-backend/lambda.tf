@@ -14,7 +14,7 @@ resource "aws_lambda_function" "api" {
   publish          = true
   logging_config {
     log_format = "JSON"
-    log_group = aws_cloudwatch_log_group.api.name
+    log_group  = aws_cloudwatch_log_group.api.name
   }
 
   environment {

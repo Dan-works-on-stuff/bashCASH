@@ -1,5 +1,5 @@
 import { ParseZipResponse } from './types';
-const API_URL = 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 export async function parseZip(base64Zip: string): Promise<ParseZipResponse> {
   const res = await fetch(`${API_URL}/v1/vfs/parse`, {
     method: 'POST',

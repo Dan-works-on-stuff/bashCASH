@@ -51,8 +51,8 @@ resource "aws_iam_role_policy" "api_permissions" {
         Resource = "*"
       },
       {
-        Effect   = "Allow"
-        Action   = [
+        Effect = "Allow"
+        Action = [
           "aws-marketplace:ViewSubscriptions",
           "aws-marketplace:Subscribe"
         ]
