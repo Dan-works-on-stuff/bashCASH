@@ -1,0 +1,33 @@
+.start-session-action {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  border-radius: 6px;
+  text-align: center;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.start-session-action:hover,
+.start-session-action:focus-visible {
+  background-color: var(--primary-color);
+  color: #0a0a0a;
+}
+
+.start-session-action:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+.start-session-action.is-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.start-session-action + .start-session-action {
+  margin-top: 0.5rem;
+}
+

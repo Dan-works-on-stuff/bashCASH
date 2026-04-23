@@ -1,14 +1,24 @@
 import { useState } from 'react';
 import { TerminalUI } from '../components/TerminalUI';
 import { VfsTree } from '../components/VfsTree';
+import { ImageModal } from '../components/ImageModal';
 import { parseZip } from '../api/client';
 import { VFSNode } from '../api/types';
 import createDefaultVfs from '../utils/defaultVfs';
+import './BashCashHomePage.css';
+
+interface ModalState {
+  type: 'image';
+  url: string;
+  filename: string;
+}
+
 export function BashCashHomePage() {
   const [vfs, setVfs] = useState<VFSNode | null>(null);
   const [currentPath, setCurrentPath] = useState<string>('/');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [modal, setModal] = useState<ModalState | null>(null);
 
   const startWithDefaultFolder = () => {
     setError('');
@@ -43,6 +53,7 @@ export function BashCashHomePage() {
     };
     reader.readAsDataURL(file);
   };
+
   return (
     <div style={{ display: 'flex', width: '100%', height: '100%' }}>
       {/* Sidebar: Either Upload or Tree */}
@@ -53,31 +64,40 @@ export function BashCashHomePage() {
             <p style={{ fontSize: '0.85rem', marginBottom: '1rem', color: '#888' }}>
               Upload a .zip file, or use the default folder template to start immediately.
             </p>
+            <label
+              htmlFor="zip-upload"
+              className={`start-session-action ${isLoading ? 'is-disabled' : ''}`}
+              style={{ marginBottom: '0.5rem', cursor: isLoading ? 'not-allowed' : 'pointer' }}
+            >
+              Upload your own
+            </label>
+            <input
+              id="zip-upload"
+              type="file"
+              accept=".zip"
+              onChange={handleFileUpload}
+              disabled={isLoading}
+              style={{ display: 'none' }}
+            />
+            <p
+              style={{
+                margin: '0.25rem 0 0.5rem',
+                textAlign: 'center',
+                color: '#888',
+                fontSize: '0.8rem',
+              }}
+            >
+              ------or------
+            </p>
             <button
               type="button"
               onClick={startWithDefaultFolder}
               disabled={isLoading}
-              style={{
-                display: 'block',
-                width: '100%',
-                marginBottom: '0.75rem',
-                padding: '0.5rem 0.75rem',
-                background: 'transparent',
-                color: 'var(--primary-color)',
-                border: '1px solid var(--primary-color)',
-                borderRadius: '6px',
-                cursor: isLoading ? 'not-allowed' : 'pointer',
-              }}
+              className={`start-session-action ${isLoading ? 'is-disabled' : ''}`}
+              style={{ marginBottom: '0.75rem', cursor: isLoading ? 'not-allowed' : 'pointer' }}
             >
               Use default folder
             </button>
-            <input 
-              type="file" 
-              accept=".zip" 
-              onChange={handleFileUpload}
-              disabled={isLoading}
-              style={{ display: 'block', width: '100%', color: 'var(--text-color)' }}
-            />
             {isLoading && <p style={{ marginTop: '1rem', color: 'var(--primary-color)' }}>Parsing...</p>}
             {error && <p style={{ marginTop: '1rem', color: '#ef4444' }}>{error}</p>}
           </div>
@@ -90,9 +110,18 @@ export function BashCashHomePage() {
         <TerminalUI 
             vfs={vfs} 
             currentPath={currentPath} 
-            onPathChange={setCurrentPath} 
+            onPathChange={setCurrentPath}
+            onModalOpen={setModal}
         />
       </div>
+      {/* Image Modal */}
+      {modal && (
+        <ImageModal
+          url={modal.url}
+          filename={modal.filename}
+          onClose={() => setModal(null)}
+        />
+      )}
     </div>
   );
 }

@@ -46,6 +46,7 @@ export function createDefaultVfs(): VFSNode {
             type: 'file',
             size: 1024,
             modified: DEFAULT_MODIFIED,
+            url: '/default-vfs/unemployed.png',
           },
         ],
       },

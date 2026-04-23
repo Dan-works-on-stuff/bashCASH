@@ -4,12 +4,15 @@ import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
 import { VFSNode } from '../api/types';
 import { executeCommand } from '../utils/vfs';
+
 interface TerminalProps {
   vfs: VFSNode | null;
   currentPath: string;
   onPathChange: (newPath: string) => void;
+  onModalOpen?: (modal: { type: 'image'; url: string; filename: string }) => void;
 }
-export function TerminalUI({ vfs, currentPath, onPathChange }: TerminalProps) {
+
+export function TerminalUI({ vfs, currentPath, onPathChange, onModalOpen }: TerminalProps) {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<Terminal | null>(null);
   const inputBuffer = useRef<string>('');
@@ -40,17 +43,21 @@ export function TerminalUI({ vfs, currentPath, onPathChange }: TerminalProps) {
         const cmd = inputBuffer.current;
         inputBuffer.current = '';
         term.writeln('');
-        const { output, newPath } = executeCommand(
+        const result = executeCommand(
             stateRef.current.vfs, 
             stateRef.current.currentPath, 
             cmd
         );
+        const { output, newPath, modal } = result;
         if (output) {
             if (cmd.trim() === 'clear') {
                 term.write(output);
             } else {
                 term.writeln(output);
             }
+        }
+        if (modal && onModalOpen) {
+          onModalOpen(modal);
         }
         if (newPath !== stateRef.current.currentPath) {
             onPathChange(newPath);

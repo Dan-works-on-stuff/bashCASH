@@ -1,4 +1,15 @@
 import { VFSNode } from '../api/types';
+
+export interface CommandResult {
+  output: string;
+  newPath: string;
+  modal?: {
+    type: 'image';
+    url: string;
+    filename: string;
+  };
+}
+
 export function resolvePath(current: string, target: string): string {
   if (!target) return current;
   const parts = target.startsWith('/') 
@@ -31,7 +42,7 @@ export function executeCommand(
   vfs: VFSNode | null,
   currentPath: string,
   commandStr: string
-): { output: string; newPath: string } {
+): CommandResult {
   const trimmed = commandStr.trim();
   if (!trimmed) return { output: '', newPath: currentPath };
   if (!vfs) {
@@ -62,6 +73,23 @@ export function executeCommand(
       if (!node) return { output: `cd: ${target}: No such file or directory`, newPath: currentPath };
       if (node.type !== 'directory') return { output: `cd: ${target}: Not a directory`, newPath: currentPath };
       return { output: '', newPath: targetPath };
+    }
+    case 'xdg-open': {
+      if (args.length === 0) return { output: 'xdg-open: missing file argument', newPath: currentPath };
+      const filePath = resolvePath(currentPath, args[0]);
+      const node = getNodeByPath(vfs, filePath);
+      if (!node) return { output: `xdg-open: cannot open '${filePath}': No such file or directory`, newPath: currentPath };
+      if (node.type === 'directory') return { output: `xdg-open: '${filePath}': Is a directory`, newPath: currentPath };
+      if (!node.url) return { output: `xdg-open: '${filePath}': Cannot open (no URL available)`, newPath: currentPath };
+      return {
+        output: `Opening ${node.name}...`,
+        newPath: currentPath,
+        modal: {
+          type: 'image',
+          url: node.url,
+          filename: node.name,
+        },
+      };
     }
     case 'clear':
       return { output: '\x1b[2J\x1b[H', newPath: currentPath };
