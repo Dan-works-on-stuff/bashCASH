@@ -12,7 +12,7 @@ resource "aws_lambda_function" "api" {
   memory_size      = 256
   timeout          = 30
   filename         = "${local.build_dir}/api.zip"
-  source_code_hash = local.source_hash
+  source_code_hash = data.archive_file.api.output_base64sha256
   publish          = true
   logging_config {
     log_format = "JSON"

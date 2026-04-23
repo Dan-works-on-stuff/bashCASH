@@ -15,6 +15,13 @@ Response 200:
   }
 }
 
+Error response format:
+{
+  "error": "string",
+  "message": "string",
+  "request_id": "string"
+}
+
 Errors:
 - 400 invalid_zip
 - 413 payload_too_large

@@ -10,3 +10,5 @@ bashcash_be.egg-info/SOURCES.txt
 bashcash_be.egg-info/dependency_links.txt
 bashcash_be.egg-info/requires.txt
 bashcash_be.egg-info/top_level.txt
+tests/test_main_api.py
+tests/test_vfs.py

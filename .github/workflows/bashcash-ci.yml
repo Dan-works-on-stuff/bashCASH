@@ -1,0 +1,72 @@
+name: BashCash CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "bashcash/**"
+      - ".github/workflows/bashcash-ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "bashcash/**"
+      - ".github/workflows/bashcash-ci.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bashcash-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-tests:
+    name: BashCash Backend (pytest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bashcash/be
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: bashcash/be/pyproject.toml
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+
+      - name: Run tests
+        run: python -m pytest -q
+
+  frontend-tests:
+    name: BashCash Frontend (vitest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bashcash/fe
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: bashcash/fe/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test
+

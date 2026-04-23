@@ -9,7 +9,7 @@ data "external" "build" {
   program     = ["node", abspath("${path.module}/scripts/build.js")]
   working_dir = var.source_path
   query = {
-    command = "rm -rf dist/api && mkdir -p dist/api && pip install . -t dist/api && cp -r app dist/api/"
+    command = "rm -rf dist/api && mkdir -p dist/api && pip install fastapi uvicorn mangum pydantic -t dist/api/ --platform manylinux2014_x86_64 --implementation cp --python-version 3.12 --only-binary=:all: && cp -r app dist/api/"
   }
 }
 data "archive_file" "api" {
