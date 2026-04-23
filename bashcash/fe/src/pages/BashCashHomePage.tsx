@@ -3,11 +3,20 @@ import { TerminalUI } from '../components/TerminalUI';
 import { VfsTree } from '../components/VfsTree';
 import { parseZip } from '../api/client';
 import { VFSNode } from '../api/types';
+import createDefaultVfs from '../utils/defaultVfs';
 export function BashCashHomePage() {
   const [vfs, setVfs] = useState<VFSNode | null>(null);
   const [currentPath, setCurrentPath] = useState<string>('/');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const startWithDefaultFolder = () => {
+    setError('');
+    setIsLoading(false);
+    setVfs(createDefaultVfs());
+    setCurrentPath('/');
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -42,8 +51,26 @@ export function BashCashHomePage() {
           <div style={{ padding: '1.5rem' }}>
             <h3 style={{ marginBottom: '1rem', color: 'var(--primary-color)' }}>1. Start Session</h3>
             <p style={{ fontSize: '0.85rem', marginBottom: '1rem', color: '#888' }}>
-              Upload a .zip file. We will convert it into a VFS for your terminal.
+              Upload a .zip file, or use the default folder template to start immediately.
             </p>
+            <button
+              type="button"
+              onClick={startWithDefaultFolder}
+              disabled={isLoading}
+              style={{
+                display: 'block',
+                width: '100%',
+                marginBottom: '0.75rem',
+                padding: '0.5rem 0.75rem',
+                background: 'transparent',
+                color: 'var(--primary-color)',
+                border: '1px solid var(--primary-color)',
+                borderRadius: '6px',
+                cursor: isLoading ? 'not-allowed' : 'pointer',
+              }}
+            >
+              Use default folder
+            </button>
             <input 
               type="file" 
               accept=".zip" 

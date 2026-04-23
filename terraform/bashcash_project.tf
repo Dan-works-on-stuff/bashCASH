@@ -8,7 +8,7 @@ module "bashcash_frontend" {
   build_command       = "npm install && npm run build"
   build_working_dir   = "${path.module}/../bashcash/fe"
   build_environment = {
-    "VITE_API_URL" = "https://api.bashcash.${local.resource_identifier}.fiipractic-2026.ro"
+    "VITE_API_URL" = module.bashcash_backend.api_base_url
   }
 
   providers = {

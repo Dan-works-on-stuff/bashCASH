@@ -32,7 +32,7 @@ export function TerminalUI({ vfs, currentPath, onPathChange }: TerminalProps) {
     term.open(terminalRef.current);
     fitAddon.fit();
     term.writeln('Welcome to BashCash Terminal \x1B[1;3;31m(v1.0)\x1B[0m');
-    term.writeln('Upload a ZIP file to begin your session.\r\n');
+    term.writeln('Upload a ZIP file or use the default folder to begin your session.\r\n');
     term.write('\r\nbashcash:/$ ');
     term.onData((data) => {
       const char = data;
