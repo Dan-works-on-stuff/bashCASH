@@ -24,6 +24,8 @@ class ParseZipResponse(BaseModel):
 class SessionSnapshot(BaseModel):
     vfs: VFSNode
     current_path: str = "/"
+    cash_balance: int = 0
+    accuracy_multiplier: float = 1.0
 
 
 class SessionRecord(SessionSnapshot):

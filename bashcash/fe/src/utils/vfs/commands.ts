@@ -13,10 +13,10 @@ export function executeCommand(
   commandStr: string,
 ): CommandResult {
   const trimmed = commandStr.trim();
-  if (!trimmed) return { output: '', newPath: currentPath };
+  if (!trimmed) return { output: '', newPath: currentPath, scoreEvent: 'none' };
   if (!vfs) {
-    if (trimmed === 'clear') return { output: '\x1b[2J\x1b[H', newPath: currentPath };
-    return { output: 'Error: No workspace uploaded. Please upload a .zip file first.', newPath: currentPath };
+    if (trimmed === 'clear') return { output: '\x1b[2J\x1b[H', newPath: currentPath, scoreEvent: 'success' };
+    return { output: 'Error: No workspace uploaded. Please upload a .zip file first.', newPath: currentPath, scoreEvent: 'mistake' };
   }
 
   const args = trimmed.split(/\s+/);
@@ -30,6 +30,6 @@ export function executeCommand(
     }
   }
 
-  return { output: `bashcash: ${cmd}: command not found`, newPath: currentPath };
+  return { output: `bashcash: ${cmd}: command not found`, newPath: currentPath, scoreEvent: 'mistake' };
 }
 

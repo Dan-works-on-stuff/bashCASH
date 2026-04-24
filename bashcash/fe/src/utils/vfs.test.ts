@@ -14,6 +14,7 @@ describe('xdg-open command', () => {
       expect(result.modal.url).toBe('/default-vfs/unemployed.png');
       expect(result.modal.filename).toBe('unemployed.png');
     }
+    expect(result.scoreEvent).toBe('success');
   });
 
   it('handles missing file argument', () => {
@@ -23,6 +24,7 @@ describe('xdg-open command', () => {
 
     expect(result.output).toContain('missing file argument');
     expect(result.modal).toBeUndefined();
+    expect(result.scoreEvent).toBe('mistake');
   });
 
   it('handles file not found', () => {
@@ -32,6 +34,7 @@ describe('xdg-open command', () => {
 
     expect(result.output).toContain('No such file or directory');
     expect(result.modal).toBeUndefined();
+    expect(result.scoreEvent).toBe('mistake');
   });
 
   it('handles directory argument', () => {
@@ -52,6 +55,7 @@ describe('xdg-open command', () => {
     if (result.modal?.type === 'image') {
       expect(result.modal.url).toBe('/default-vfs/unemployed.png');
     }
+    expect(result.scoreEvent).toBe('success');
   });
 });
 
@@ -87,6 +91,7 @@ describe('safe local filesystem commands', () => {
 
     expect(result.output).toContain('Running worker task');
     expect(result.newPath).toBe('/son2/nested');
+    expect(result.scoreEvent).toBe('success');
   });
 
   it('searches recursively with grep', () => {
@@ -96,6 +101,7 @@ describe('safe local filesystem commands', () => {
 
     expect(result.output).toContain('/son2/nested/worker.sh');
     expect(result.output).toContain('Running worker task');
+    expect(result.scoreEvent).toBe('success');
   });
 
   it('creates files with touch and returns an updated VFS snapshot', () => {
@@ -113,6 +119,7 @@ describe('safe local filesystem commands', () => {
       expect(node.size).toBe(0);
       expect(node.modified).toBeTruthy();
     }
+    expect(result.scoreEvent).toBe('success');
   });
 
   it('creates nested directories with mkdir -p', () => {
@@ -123,6 +130,7 @@ describe('safe local filesystem commands', () => {
     expect(result.updatedVfs).toBeDefined();
     const updated = result.updatedVfs ?? vfs;
     expect(getNodeByPath(updated, '/projects/app/src')?.type).toBe('directory');
+    expect(result.scoreEvent).toBe('success');
   });
 
   it('removes files and directories recursively with rm -r', () => {
@@ -133,6 +141,25 @@ describe('safe local filesystem commands', () => {
     expect(result.updatedVfs).toBeDefined();
     const updated = result.updatedVfs ?? vfs;
     expect(getNodeByPath(updated, '/son2')).toBeNull();
+    expect(result.scoreEvent).toBe('success');
+  });
+});
+
+describe('command score events', () => {
+  it('does not change score on blank input', () => {
+    const vfs = createDefaultVfs();
+
+    const result = executeCommand(vfs, '/', '   ');
+
+    expect(result.scoreEvent).toBe('none');
+  });
+
+  it('marks unknown commands as mistakes', () => {
+    const vfs = createDefaultVfs();
+
+    const result = executeCommand(vfs, '/', 'definitely-not-a-command');
+
+    expect(result.scoreEvent).toBe('mistake');
   });
 });
 

@@ -39,6 +39,8 @@ def _build_session_record(session_id: str, snapshot: SessionSnapshot) -> Session
 		session_id=session_id,
 		vfs=snapshot.vfs,
 		current_path=snapshot.current_path,
+		cash_balance=snapshot.cash_balance,
+		accuracy_multiplier=snapshot.accuracy_multiplier,
 		updated_at=_now_iso(now_epoch),
 		ttl=now_epoch + SESSION_TTL_SECONDS,
 	)

@@ -14,6 +14,8 @@ export interface ParseZipResponse {
 export interface SessionSnapshot {
   vfs: VFSNode;
   current_path: string;
+  cash_balance: number;
+  accuracy_multiplier: number;
 }
 
 export interface SessionRecord extends SessionSnapshot {

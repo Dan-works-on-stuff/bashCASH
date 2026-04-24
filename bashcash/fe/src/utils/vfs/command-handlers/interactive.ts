@@ -15,15 +15,16 @@ export function handleInteractiveCommands(
 ): CommandResult | null {
   switch (cmd) {
     case 'xdg-open': {
-      if (args.length === 0) return { output: 'xdg-open: missing file argument', newPath: currentPath };
+      if (args.length === 0) return { output: 'xdg-open: missing file argument', newPath: currentPath, scoreEvent: 'mistake' };
       const filePath = resolvePath(currentPath, args[0]);
       const node = getNodeByPath(vfs, filePath);
-      if (!node) return { output: `xdg-open: cannot open '${filePath}': No such file or directory`, newPath: currentPath };
-      if (node.type === 'directory') return { output: `xdg-open: '${filePath}': Is a directory`, newPath: currentPath };
-      if (!node.url) return { output: `xdg-open: '${filePath}': Cannot open (no URL available)`, newPath: currentPath };
+      if (!node) return { output: `xdg-open: cannot open '${filePath}': No such file or directory`, newPath: currentPath, scoreEvent: 'mistake' };
+      if (node.type === 'directory') return { output: `xdg-open: '${filePath}': Is a directory`, newPath: currentPath, scoreEvent: 'mistake' };
+      if (!node.url) return { output: `xdg-open: '${filePath}': Cannot open (no URL available)`, newPath: currentPath, scoreEvent: 'mistake' };
       return {
         output: `Opening ${node.name}...`,
         newPath: currentPath,
+        scoreEvent: 'success',
         modal: {
           type: 'image',
           url: node.url,
@@ -32,18 +33,19 @@ export function handleInteractiveCommands(
       };
     }
     case 'nano': {
-      if (args.length === 0) return { output: 'nano: missing file argument', newPath: currentPath };
+      if (args.length === 0) return { output: 'nano: missing file argument', newPath: currentPath, scoreEvent: 'mistake' };
       const filePath = resolvePath(currentPath, args[0]);
       const node = getNodeByPath(vfs, filePath);
-      if (!node) return { output: `nano: ${args[0]}: No such file or directory`, newPath: currentPath };
-      if (node.type === 'directory') return { output: `nano: ${args[0]}: Is a directory`, newPath: currentPath };
+      if (!node) return { output: `nano: ${args[0]}: No such file or directory`, newPath: currentPath, scoreEvent: 'mistake' };
+      if (node.type === 'directory') return { output: `nano: ${args[0]}: Is a directory`, newPath: currentPath, scoreEvent: 'mistake' };
       if (!isEditableTextFile(node.name)) {
-        return { output: `nano: ${args[0]}: Unsupported file type (only .txt and .sh)`, newPath: currentPath };
+        return { output: `nano: ${args[0]}: Unsupported file type (only .txt and .sh)`, newPath: currentPath, scoreEvent: 'mistake' };
       }
 
       return {
         output: `Opening ${node.name} in editor...`,
         newPath: currentPath,
+        scoreEvent: 'success',
         modal: {
           type: 'text-editor',
           filePath,

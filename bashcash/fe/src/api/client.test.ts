@@ -111,6 +111,8 @@ describe('parseZip', () => {
         children: [],
       },
       current_path: '/son1',
+      cash_balance: 20,
+      accuracy_multiplier: 1.2,
     };
 
     const responseBody = {

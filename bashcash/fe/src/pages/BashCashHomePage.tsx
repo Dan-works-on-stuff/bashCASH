@@ -1,28 +1,49 @@
+import type { ChangeEvent } from 'react';
 import { TerminalUI } from '../components/TerminalUI';
 import { VfsTree } from '../components/VfsTree';
 import { ImageModal } from '../components/ImageModal';
 import { TextEditorModal } from '../components/TextEditorModal';
-import { useBashCashSession } from '../hooks/useBashCashSession';
+import type { VFSNode } from '../api/types';
+import type { CommandModal } from '../utils/vfs/types';
 import './BashCashHomePage.css';
 
-export function BashCashHomePage() {
-  const {
-    vfs,
-    currentPath,
-    isLoading,
-    isRestoringSession,
-    isResettingSession,
-    error,
-    modal,
-    sessionId,
-    handlePathChange,
-    handleVfsChange,
-    handleNewSession,
-    handleEditorSave,
-    startWithDefaultFolder,
-    handleFileUpload,
-    setModal,
-  } = useBashCashSession();
+interface Props {
+  vfs: VFSNode | null;
+  currentPath: string;
+  isLoading: boolean;
+  isRestoringSession: boolean;
+  isResettingSession: boolean;
+  error: string;
+  modal: CommandModal | null;
+  sessionId: string;
+  handlePathChange: (newPath: string) => void;
+  handleVfsChange: (nextVfs: VFSNode) => void;
+  handleCommandOutcome: (result: { scoreEvent?: 'success' | 'mistake' | 'none'; newPath: string; updatedVfs?: VFSNode }) => void;
+  handleNewSession: () => void;
+  handleEditorSave: (filePath: string, content: string) => void;
+  startWithDefaultFolder: () => void;
+  handleFileUpload: (event: ChangeEvent<HTMLInputElement>) => void;
+  setModal: (modal: CommandModal | null) => void;
+}
+
+export function BashCashHomePage({
+  vfs,
+  currentPath,
+  isLoading,
+  isRestoringSession,
+  isResettingSession,
+  error,
+  modal,
+  sessionId,
+  handlePathChange,
+  handleVfsChange,
+  handleCommandOutcome,
+  handleNewSession,
+  handleEditorSave,
+  startWithDefaultFolder,
+  handleFileUpload,
+  setModal,
+}: Props) {
 
   return (
     <div style={{ display: 'flex', width: '100%', height: '100%' }}>
@@ -104,6 +125,7 @@ export function BashCashHomePage() {
             currentPath={currentPath} 
             onPathChange={handlePathChange}
             onVfsChange={handleVfsChange}
+            onCommandOutcome={handleCommandOutcome}
             onModalOpen={setModal}
         />
       </div>

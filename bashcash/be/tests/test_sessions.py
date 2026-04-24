@@ -28,6 +28,8 @@ def test_session_upsert_refreshes_ttl_and_restore_returns_latest_snapshot(monkey
             ],
         },
         'current_path': '/son1',
+        'cash_balance': 30,
+        'accuracy_multiplier': 1.3,
     }
 
     upsert_response = client.post('/v1/sessions/session-123', json=payload)
@@ -36,6 +38,8 @@ def test_session_upsert_refreshes_ttl_and_restore_returns_latest_snapshot(monkey
     upsert_body = upsert_response.json()
     assert upsert_body['session_id'] == 'session-123'
     assert upsert_body['current_path'] == '/son1'
+    assert upsert_body['cash_balance'] == 30
+    assert upsert_body['accuracy_multiplier'] == 1.3
     assert upsert_body['ttl'] == 3601
     assert upsert_body['updated_at'] == '1970-01-01T00:00:01Z'
 
@@ -53,6 +57,8 @@ def test_session_upsert_refreshes_ttl_and_restore_returns_latest_snapshot(monkey
             ],
         },
         'current_path': '/son2',
+        'cash_balance': 40,
+        'accuracy_multiplier': 1.4,
     }
 
     second_response = client.put('/v1/sessions/session-123', json=updated_payload)
@@ -60,6 +66,8 @@ def test_session_upsert_refreshes_ttl_and_restore_returns_latest_snapshot(monkey
     assert second_response.status_code == 200
     second_body = second_response.json()
     assert second_body['current_path'] == '/son2'
+    assert second_body['cash_balance'] == 40
+    assert second_body['accuracy_multiplier'] == 1.4
     assert second_body['ttl'] == 3700
 
     get_response = client.get('/v1/sessions/session-123')
@@ -68,6 +76,8 @@ def test_session_upsert_refreshes_ttl_and_restore_returns_latest_snapshot(monkey
     assert get_body['session_id'] == 'session-123'
     assert get_body['vfs']['children'][0]['content'] == 'updated'
     assert get_body['current_path'] == '/son2'
+    assert get_body['cash_balance'] == 40
+    assert get_body['accuracy_multiplier'] == 1.4
 
 
 def test_missing_session_returns_structured_404(monkeypatch):

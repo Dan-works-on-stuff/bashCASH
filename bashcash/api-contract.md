@@ -36,7 +36,9 @@ Errors:
 Request:
 {
   "vfs": { "name": "/", "type": "directory", "children": [] },
-  "current_path": "/"
+  "current_path": "/",
+  "cash_balance": 0,
+  "accuracy_multiplier": 1.0
 }
 
 Response 200:
@@ -44,6 +46,8 @@ Response 200:
   "session_id": "uuid",
   "vfs": { "name": "/", "type": "directory", "children": [] },
   "current_path": "/",
+  "cash_balance": 0,
+  "accuracy_multiplier": 1.0,
   "updated_at": "2026-04-24T12:00:00Z",
   "ttl": 1710000000
 }
@@ -54,6 +58,8 @@ Response 200:
   "session_id": "uuid",
   "vfs": { "name": "/", "type": "directory", "children": [] },
   "current_path": "/",
+  "cash_balance": 0,
+  "accuracy_multiplier": 1.0,
   "updated_at": "2026-04-24T12:00:00Z",
   "ttl": 1710000000
 }
@@ -65,7 +71,9 @@ Errors:
 Request:
 {
   "vfs": { "name": "/", "type": "directory", "children": [] },
-  "current_path": "/son1"
+  "current_path": "/son1",
+  "cash_balance": 40,
+  "accuracy_multiplier": 1.4
 }
 
 Response 200:
@@ -73,6 +81,8 @@ Response 200:
   "session_id": "uuid",
   "vfs": { "name": "/", "type": "directory", "children": [] },
   "current_path": "/son1",
+  "cash_balance": 40,
+  "accuracy_multiplier": 1.4,
   "updated_at": "2026-04-24T12:00:00Z",
   "ttl": 1710000000
 }
@@ -81,6 +91,8 @@ Behavior:
 - Session snapshots are stored per `session_id` only; there are no user accounts.
 - Every save refreshes `ttl` to 1 hour from the save time.
 - The frontend is responsible for generating and reusing the `session_id` (for example via `localStorage`).
+- `cash_balance` starts at `0` and increases by `10` for every successful command.
+- `accuracy_multiplier` starts at `1.0` and increases by `0.1` after every successful command without a mistake; any mistake resets it to `1.0`.
 
 ## DELETE /v1/sessions/{session_id}
 Response:

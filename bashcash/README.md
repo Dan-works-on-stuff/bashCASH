@@ -8,7 +8,7 @@ Users upload a `.zip` file containing a real directory structure, which is conve
 1. **In-Memory VFS Generation:** Uploading a `.zip` archive triggers a pure Python generator that extracts the file tree, file sizes, and modification timestamps without persistence.
 2. **Client-Side Terminal Simulation:** A real POSIX CLI experience powered by `xterm.js`, with command logic implemented entirely on the frontend.
 3. **Visual Directory Mapper:** A dynamic React-based visualization of the file tree mapped out from the VFS.
-4. **Stateless Gamification:** frictionless play mapped via UUID to DynamoDB TTL-based sessions.
+4. **Stateless Gamification:** frictionless play mapped via UUID to DynamoDB TTL-based sessions. Added `cash_balance` and `accuracy_multiplier` logic based on command score events.
 5. **Bedrock AI Tutor:** An integrated Claude-3-Haiku assistant accessed via `<command> --help` to explain Linux utilities efficiently in the CLI.
 
 ## Stack
@@ -17,4 +17,3 @@ Users upload a `.zip` file containing a real directory structure, which is conve
 - **Persistence:** DynamoDB (Single-table setup).
 - **AI:** AWS Bedrock (Claude 3 Haiku).
 - **IaC:** Terraform.
-

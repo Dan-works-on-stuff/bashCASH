@@ -23,10 +23,10 @@ A serverless Single-Page Application (SPA) providing a gamified, simulated POSIX
 - **Editable File Content:** UTF-8 `.txt` and `.sh` files are read from uploaded ZIPs and returned inline in the VFS response so the frontend editor can preload content.
 - **Session Store:** DynamoDB-backed session snapshots persist the full VFS tree plus current path per `session_id`, and every save refreshes the TTL to one hour from the last modification.
 - **Observability:** Request middleware adds `x-request-id`, latency/status logs, structured error payloads (`error`, `message`, `request_id`), and `GET /v1/health`.
-- **Database (planned):** Amazon DynamoDB.
+- **Database:** Amazon DynamoDB.
   - **Design:** Single-table design.
   - **Partition Key:** `session_id` (UUIDv4 generated on frontend).
-  - **Attributes:** `cash_balance` (Number), `ttl` (epoch).
+  - **Attributes:** `cash_balance` (Number), `accuracy_multiplier` (Number), `ttl` (epoch).
 
 ### AI Integration (planned)
 - **Service:** AWS Bedrock using Anthropic Claude 3 Haiku.
@@ -46,7 +46,7 @@ A serverless Single-Page Application (SPA) providing a gamified, simulated POSIX
 - **Session Restore:** Refreshing the page can reload the last saved VFS/current path for the same `session_id`.
 - **Session Reset/Delete:** Starting a new session clears local workspace state and calls `DELETE /v1/sessions/{session_id}` to remove persisted state.
 - **Improved Error Diagnostics:** Request correlation IDs and structured API errors surfaced to frontend.
-- **Stateless Gamification (planned):** localStorage UUID + DynamoDB TTL-backed session records.
+- **Stateless Gamification:** localStorage UUID + DynamoDB TTL-backed session records, with `cash_balance` and `accuracy_multiplier` based on command score events.
 - **Regex-Based Exercise Validation (planned):** output matching against challenge regex/state machine.
 - **Native AI Tutor (planned):** Bedrock-backed command explanation endpoint.
 
@@ -55,10 +55,11 @@ A serverless Single-Page Application (SPA) providing a gamified, simulated POSIX
 - **Backend tests (`pytest`):**
   - `be/tests/test_vfs.py` covers valid/invalid zip parsing and metadata presence.
   - `be/tests/test_main_api.py` covers `/v1/health`, `/v1/vfs/parse` success, and structured `400` contract for invalid zip.
-  - `be/tests/test_sessions.py` covers save/restore routes and TTL refresh behavior.
+  - `be/tests/test_sessions.py` covers save/restore routes and TTL refresh behavior, plus gamification properties.
 - **Frontend tests (`vitest`):**
   - `fe/src/api/client.test.ts` covers API success path and error mapping (HTTP/network/CORS/timeout).
-  - `fe/src/utils/vfs.test.ts` covers terminal command execution, `xdg-open`, `nano`, and file content updates.
+  - `fe/src/utils/vfs.test.ts` covers terminal command execution, `xdg-open`, `nano`, file content updates, and command score events.
+  - `fe/src/hooks/useBashCashSession.test.ts` covers Gamification properties in local storage and command handling.
   - `fe/src/utils/defaultVfs.test.ts` covers the deterministic default folder structure.
 - **CI automation:** `.github/workflows/bashcash-ci.yml` runs BashCash backend and frontend tests on push/PR for BashCash changes.
 
@@ -71,16 +72,17 @@ The project is currently split across `/bashcash` app code and shared repo-level
   - Default folder flow starts a deterministic local VFS without backend calls
   - Tree UI renders returned VFS for display-only navigation
   - `TerminalUI` renders the terminal shell; command behavior lives in `src/utils/vfs/commands.ts` and the handler modules under `src/utils/vfs/command-handlers/`
+  - Gamification state (Cash, Multiplier) based on command score events has been added.
   - `useBashCashSession` manages restore/save, new-session rotation, uploads, and editor-driven file updates
   - Session snapshots are restored/saved via `GET`/`PUT /v1/sessions/{session_id}` with `localStorage` session IDs
   - API client now logs/normalizes fetch failures for easier debugging
 
-- `/bashcash/be` (**Implemented VFS parser endpoint + request-level observability**)
+- `/bashcash/be` (**Implemented VFS parser endpoint + request-level observability + Gamification Props**)
   - FastAPI app with CORS + Mangum handler
   - `POST /v1/vfs/parse` and `GET /v1/health` implemented
   - Structured error responses with correlation ID support
   - `vfs.py` parses zip and includes file metadata (`size`, `modified`) plus inline `content` for UTF-8 `.txt`/`.sh` files
-  - `sessions.py` persists session snapshots to DynamoDB (or in-memory fallback in local/dev when the table env var is absent); `ai.py` is still a placeholder
+  - `sessions.py` persists session snapshots to DynamoDB (or in-memory fallback in local/dev when the table env var is absent), including `cash_balance` and `accuracy_multiplier`; `ai.py` is still a placeholder
 
 - `/terraform` (**BashCash deployment wiring in progress**)
   - `terraform/modules/bashcash-backend/outputs.tf` now exposes `api_base_url`, `invoke_url`, `api_id`, and `lambda_api_name`

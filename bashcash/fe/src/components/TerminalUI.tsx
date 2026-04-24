@@ -4,7 +4,7 @@ import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
 import { VFSNode } from '../api/types';
 import { executeCommand } from '../utils/vfs/commands';
-import { CommandModal } from '../utils/vfs/types';
+import { CommandModal, type CommandResult } from '../utils/vfs/types';
 
 interface TerminalProps {
   vfs: VFSNode | null;
@@ -12,16 +12,21 @@ interface TerminalProps {
   onPathChange: (newPath: string) => void;
   onVfsChange?: (nextVfs: VFSNode) => void;
   onModalOpen?: (modal: CommandModal) => void;
+  onCommandOutcome?: (result: Pick<CommandResult, 'scoreEvent' | 'newPath' | 'updatedVfs'>) => void;
 }
 
-export function TerminalUI({ vfs, currentPath, onPathChange, onVfsChange, onModalOpen }: TerminalProps) {
+export function TerminalUI({ vfs, currentPath, onPathChange, onVfsChange, onModalOpen, onCommandOutcome }: TerminalProps) {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<Terminal | null>(null);
   const inputBuffer = useRef<string>('');
   const stateRef = useRef({ vfs, currentPath });
+  const handlersRef = useRef({ onPathChange, onVfsChange, onModalOpen, onCommandOutcome });
   useEffect(() => {
     stateRef.current = { vfs, currentPath };
   }, [vfs, currentPath]);
+  useEffect(() => {
+    handlersRef.current = { onPathChange, onVfsChange, onModalOpen, onCommandOutcome };
+  }, [onPathChange, onVfsChange, onModalOpen, onCommandOutcome]);
   useEffect(() => {
     if (!terminalRef.current) return;
     const term = new Terminal({
@@ -50,7 +55,8 @@ export function TerminalUI({ vfs, currentPath, onPathChange, onVfsChange, onModa
             stateRef.current.currentPath, 
             cmd
         );
-        const { output, newPath, modal, updatedVfs } = result;
+        const { output, newPath, modal, updatedVfs, scoreEvent } = result;
+        const { onPathChange: latestOnPathChange, onVfsChange: latestOnVfsChange, onModalOpen: latestOnModalOpen, onCommandOutcome: latestOnCommandOutcome } = handlersRef.current;
         if (output) {
             if (cmd.trim() === 'clear') {
                 term.write(output);
@@ -58,19 +64,22 @@ export function TerminalUI({ vfs, currentPath, onPathChange, onVfsChange, onModa
                 term.writeln(output);
             }
         }
-        if (updatedVfs && onVfsChange) {
-          onVfsChange(updatedVfs);
+        if (updatedVfs && latestOnVfsChange) {
+          latestOnVfsChange(updatedVfs);
         }
-        if (modal && onModalOpen) {
-          onModalOpen(modal);
+        if (modal && latestOnModalOpen) {
+          latestOnModalOpen(modal);
         }
         if (newPath !== stateRef.current.currentPath) {
-            onPathChange(newPath);
+            latestOnPathChange(newPath);
             term.write(`bashcash:${newPath}$ `);
         } else {
             term.write(`bashcash:${newPath}$ `);
         }
-      } 
+        if (latestOnCommandOutcome) {
+          latestOnCommandOutcome({ scoreEvent, newPath, updatedVfs });
+        }
+      }
       else if (char === '\u007f') {
         if (inputBuffer.current.length > 0) {
           inputBuffer.current = inputBuffer.current.slice(0, -1);

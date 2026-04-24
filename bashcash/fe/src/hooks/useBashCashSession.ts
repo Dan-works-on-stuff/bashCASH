@@ -1,12 +1,14 @@
-import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { deleteSession, getSession, parseZip, saveSession } from '../api/client';
 import { SessionSnapshot, VFSNode } from '../api/types';
 import createDefaultVfs from '../utils/defaultVfs';
 import { updateFileContent } from '../utils/vfs';
-import { CommandModal } from '../utils/vfs/types';
+import { CommandModal, type CommandResult } from '../utils/vfs/types';
 
 const SESSION_STORAGE_KEY = 'bashcash.session-id';
 const SESSION_SNAPSHOT_STORAGE_PREFIX = 'bashcash.session-snapshot:';
+const DEFAULT_CASH_BALANCE = 0;
+const DEFAULT_ACCURACY_MULTIPLIER = 1.0;
 
 function createSessionId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -50,10 +52,35 @@ function readCachedSessionSnapshot(sessionId: string): SessionSnapshot | null {
   if (!raw) return null;
 
   try {
-    return JSON.parse(raw) as SessionSnapshot;
+    const parsed = JSON.parse(raw) as Partial<SessionSnapshot>;
+    if (!parsed.vfs) return null;
+    return {
+      vfs: parsed.vfs,
+      current_path: parsed.current_path ?? '/',
+      cash_balance: parsed.cash_balance ?? DEFAULT_CASH_BALANCE,
+      accuracy_multiplier: parsed.accuracy_multiplier ?? DEFAULT_ACCURACY_MULTIPLIER,
+    };
   } catch {
     return null;
   }
+}
+
+function createSessionSnapshot(
+  vfs: VFSNode | null,
+  currentPath: string,
+  cashBalance: number,
+  accuracyMultiplier: number,
+): SessionSnapshot | null {
+  if (!vfs) {
+    return null;
+  }
+
+  return {
+    vfs,
+    current_path: currentPath,
+    cash_balance: cashBalance,
+    accuracy_multiplier: accuracyMultiplier,
+  };
 }
 
 function writeCachedSessionSnapshot(sessionId: string, snapshot: SessionSnapshot): void {
@@ -74,24 +101,63 @@ function clearCachedSessionSnapshot(sessionId: string): void {
 
 export function useBashCashSession() {
   const [sessionId, setSessionId] = useState(() => getOrCreateSessionId());
-  const [vfs, setVfs] = useState<VFSNode | null>(() => readCachedSessionSnapshot(sessionId)?.vfs ?? null);
-  const [currentPath, setCurrentPath] = useState<string>(() => readCachedSessionSnapshot(sessionId)?.current_path ?? '/');
+  const [cachedSnapshot] = useState(() => readCachedSessionSnapshot(sessionId));
+  const [vfs, setVfs] = useState<VFSNode | null>(() => cachedSnapshot?.vfs ?? null);
+  const [currentPath, setCurrentPath] = useState<string>(() => cachedSnapshot?.current_path ?? '/');
+  const [cashBalance, setCashBalance] = useState<number>(() => cachedSnapshot?.cash_balance ?? DEFAULT_CASH_BALANCE);
+  const [accuracyMultiplier, setAccuracyMultiplier] = useState<number>(() => cachedSnapshot?.accuracy_multiplier ?? DEFAULT_ACCURACY_MULTIPLIER);
   const [isLoading, setIsLoading] = useState(false);
   const [isRestoringSession, setIsRestoringSession] = useState(true);
   const [isResettingSession, setIsResettingSession] = useState(false);
   const [error, setError] = useState('');
   const [modal, setModal] = useState<CommandModal | null>(null);
+  const sessionIdRef = useRef(sessionId);
+  const vfsRef = useRef<VFSNode | null>(vfs);
+  const currentPathRef = useRef(currentPath);
+  const cashBalanceRef = useRef(cashBalance);
+  const accuracyMultiplierRef = useRef(accuracyMultiplier);
+
+  useEffect(() => {
+    sessionIdRef.current = sessionId;
+  }, [sessionId]);
+
+  useEffect(() => {
+    vfsRef.current = vfs;
+  }, [vfs]);
+
+  useEffect(() => {
+    currentPathRef.current = currentPath;
+  }, [currentPath]);
+
+  useEffect(() => {
+    cashBalanceRef.current = cashBalance;
+  }, [cashBalance]);
+
+  useEffect(() => {
+    accuracyMultiplierRef.current = accuracyMultiplier;
+  }, [accuracyMultiplier]);
 
   const persistSession = useCallback(
     async (snapshot: SessionSnapshot) => {
-      writeCachedSessionSnapshot(sessionId, snapshot);
+      const activeSessionId = sessionIdRef.current;
+      writeCachedSessionSnapshot(activeSessionId, snapshot);
       try {
-        await saveSession(sessionId, snapshot);
+        await saveSession(activeSessionId, snapshot);
       } catch (err: any) {
         setError(err.message || 'Failed to save session');
       }
     },
-    [sessionId],
+    [],
+  );
+
+  const persistCurrentSession = useCallback(
+    (nextVfs: VFSNode | null, nextPath: string, nextCashBalance: number, nextAccuracyMultiplier: number) => {
+      const snapshot = createSessionSnapshot(nextVfs, nextPath, nextCashBalance, nextAccuracyMultiplier);
+      if (!snapshot) return;
+
+      void persistSession(snapshot);
+    },
+    [persistSession],
   );
 
   useEffect(() => {
@@ -110,18 +176,26 @@ export function useBashCashSession() {
           if (fallbackSession) {
             setVfs(fallbackSession.vfs);
             setCurrentPath(fallbackSession.current_path);
+            setCashBalance(fallbackSession.cash_balance);
+            setAccuracyMultiplier(fallbackSession.accuracy_multiplier);
           } else {
             setVfs(null);
             setCurrentPath('/');
+            setCashBalance(DEFAULT_CASH_BALANCE);
+            setAccuracyMultiplier(DEFAULT_ACCURACY_MULTIPLIER);
           }
           return;
         }
 
         setVfs(savedSession.vfs);
         setCurrentPath(savedSession.current_path);
+        setCashBalance(savedSession.cash_balance ?? DEFAULT_CASH_BALANCE);
+        setAccuracyMultiplier(savedSession.accuracy_multiplier ?? DEFAULT_ACCURACY_MULTIPLIER);
         writeCachedSessionSnapshot(sessionId, {
           vfs: savedSession.vfs,
           current_path: savedSession.current_path,
+          cash_balance: savedSession.cash_balance ?? DEFAULT_CASH_BALANCE,
+          accuracy_multiplier: savedSession.accuracy_multiplier ?? DEFAULT_ACCURACY_MULTIPLIER,
         });
       } catch (err: any) {
         if (!cancelled) {
@@ -129,6 +203,8 @@ export function useBashCashSession() {
           if (fallbackSession) {
             setVfs(fallbackSession.vfs);
             setCurrentPath(fallbackSession.current_path);
+            setCashBalance(fallbackSession.cash_balance);
+            setAccuracyMultiplier(fallbackSession.accuracy_multiplier);
           } else {
             setError(err.message || 'Failed to restore session');
           }
@@ -150,29 +226,36 @@ export function useBashCashSession() {
   const handlePathChange = useCallback(
     (nextPath: string) => {
       setCurrentPath(nextPath);
-      if (vfs) {
-        const snapshot = {
-          vfs,
-          current_path: nextPath,
-        };
-        writeCachedSessionSnapshot(sessionId, snapshot);
-        void persistSession(snapshot);
-      }
+      persistCurrentSession(vfsRef.current, nextPath, cashBalanceRef.current, accuracyMultiplierRef.current);
     },
-    [persistSession, sessionId, vfs],
+    [persistCurrentSession],
   );
 
   const handleVfsChange = useCallback(
     (nextVfs: VFSNode) => {
       setVfs(nextVfs);
-      const snapshot = {
-        vfs: nextVfs,
-        current_path: currentPath,
-      };
-      writeCachedSessionSnapshot(sessionId, snapshot);
-      void persistSession(snapshot);
+      persistCurrentSession(nextVfs, currentPathRef.current, cashBalanceRef.current, accuracyMultiplierRef.current);
     },
-    [currentPath, persistSession, sessionId],
+    [persistCurrentSession],
+  );
+
+  const handleCommandOutcome = useCallback(
+    (result: Pick<CommandResult, 'scoreEvent' | 'newPath' | 'updatedVfs'>) => {
+      const { scoreEvent } = result;
+      if (!scoreEvent || scoreEvent === 'none') {
+        return;
+      }
+
+      const currentCashBalance = cashBalanceRef.current;
+      const currentAccuracyMultiplier = accuracyMultiplierRef.current;
+      const nextCashBalance = scoreEvent === 'success' ? currentCashBalance + 10 : currentCashBalance;
+      const nextAccuracyMultiplier = scoreEvent === 'success' ? Number((currentAccuracyMultiplier + 0.1).toFixed(1)) : DEFAULT_ACCURACY_MULTIPLIER;
+
+      setCashBalance(nextCashBalance);
+      setAccuracyMultiplier(nextAccuracyMultiplier);
+      persistCurrentSession(result.updatedVfs ?? vfsRef.current, result.newPath, nextCashBalance, nextAccuracyMultiplier);
+    },
+    [persistCurrentSession],
   );
 
   const handleNewSession = useCallback(() => {
@@ -185,6 +268,8 @@ export function useBashCashSession() {
     setModal(null);
     setVfs(null);
     setCurrentPath('/');
+    setCashBalance(DEFAULT_CASH_BALANCE);
+    setAccuracyMultiplier(DEFAULT_ACCURACY_MULTIPLIER);
     setSessionId(rotateSessionId());
     setIsResettingSession(false);
 
@@ -195,9 +280,10 @@ export function useBashCashSession() {
 
   const handleEditorSave = useCallback(
     (filePath: string, content: string) => {
-      if (!vfs) return;
+      const currentVfs = vfsRef.current;
+      if (!currentVfs) return;
 
-      const nextVfs = updateFileContent(vfs, filePath, content);
+      const nextVfs = updateFileContent(currentVfs, filePath, content);
       setVfs(nextVfs);
 
       setModal((prev) => {
@@ -205,29 +291,21 @@ export function useBashCashSession() {
         return { ...prev, content };
       });
 
-      const snapshot = {
-        vfs: nextVfs,
-        current_path: currentPath,
-      };
-      writeCachedSessionSnapshot(sessionId, snapshot);
-      void persistSession(snapshot);
+      persistCurrentSession(nextVfs, currentPathRef.current, cashBalanceRef.current, accuracyMultiplierRef.current);
     },
-    [currentPath, persistSession, sessionId, vfs],
+    [persistCurrentSession],
   );
 
   const startWithDefaultFolder = useCallback(() => {
     setError('');
     setIsLoading(false);
+    setCashBalance(DEFAULT_CASH_BALANCE);
+    setAccuracyMultiplier(DEFAULT_ACCURACY_MULTIPLIER);
     const defaultVfs = createDefaultVfs();
     setVfs(defaultVfs);
     setCurrentPath('/');
-    const snapshot = {
-      vfs: defaultVfs,
-      current_path: '/',
-    };
-    writeCachedSessionSnapshot(sessionId, snapshot);
-    void persistSession(snapshot);
-  }, [persistSession, sessionId]);
+    persistCurrentSession(defaultVfs, '/', DEFAULT_CASH_BALANCE, DEFAULT_ACCURACY_MULTIPLIER);
+  }, [persistCurrentSession]);
 
   const handleFileUpload = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
@@ -245,14 +323,11 @@ export function useBashCashSession() {
             return;
           }
           const response = await parseZip(base64Data);
+          setCashBalance(DEFAULT_CASH_BALANCE);
+          setAccuracyMultiplier(DEFAULT_ACCURACY_MULTIPLIER);
           setVfs(response.vfs);
           setCurrentPath('/');
-          const snapshot = {
-            vfs: response.vfs,
-            current_path: '/',
-          };
-          writeCachedSessionSnapshot(sessionId, snapshot);
-          void persistSession(snapshot);
+          persistCurrentSession(response.vfs, '/', DEFAULT_CASH_BALANCE, DEFAULT_ACCURACY_MULTIPLIER);
         } catch (err: any) {
           setError(err.message || 'An error occurred');
         } finally {
@@ -265,12 +340,14 @@ export function useBashCashSession() {
       };
       reader.readAsDataURL(file);
     },
-    [persistSession, sessionId],
+    [persistCurrentSession],
   );
 
   return {
     vfs,
     currentPath,
+    cashBalance,
+    accuracyMultiplier,
     isLoading,
     isRestoringSession,
     isResettingSession,
@@ -279,6 +356,7 @@ export function useBashCashSession() {
     sessionId,
     handlePathChange,
     handleVfsChange,
+    handleCommandOutcome,
     handleNewSession,
     handleEditorSave,
     startWithDefaultFolder,

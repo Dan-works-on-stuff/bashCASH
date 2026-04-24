@@ -12,7 +12,7 @@ export function handleReadCommands(
   switch (cmd) {
     case 'cat': {
       if (args.length === 0) {
-        return { output: 'cat: missing file argument', newPath: currentPath };
+        return { output: 'cat: missing file argument', newPath: currentPath, scoreEvent: 'mistake' };
       }
 
       const contents: string[] = [];
@@ -20,20 +20,20 @@ export function handleReadCommands(
         const filePath = resolvePath(currentPath, targetArg);
         const node = getNodeByPath(vfs, filePath);
         if (!node) {
-          return { output: `cat: ${targetArg}: No such file or directory`, newPath: currentPath };
+          return { output: `cat: ${targetArg}: No such file or directory`, newPath: currentPath, scoreEvent: 'mistake' };
         }
         if (node.type === 'directory') {
-          return { output: `cat: ${targetArg}: Is a directory`, newPath: currentPath };
+          return { output: `cat: ${targetArg}: Is a directory`, newPath: currentPath, scoreEvent: 'mistake' };
         }
 
         contents.push(node.content ?? '');
       }
 
-      return { output: contents.join('\n'), newPath: currentPath };
+      return { output: contents.join('\n'), newPath: currentPath, scoreEvent: 'success' };
     }
     case 'grep': {
       if (args.length === 0) {
-        return { output: 'grep: missing search pattern', newPath: currentPath };
+        return { output: 'grep: missing search pattern', newPath: currentPath, scoreEvent: 'mistake' };
       }
 
       const [pattern, ...targets] = args;
@@ -53,7 +53,7 @@ export function handleReadCommands(
         const targetPath = resolvePath(currentPath, targetArg);
         const node = getNodeByPath(vfs, targetPath);
         if (!node) {
-          return { output: `grep: ${targetArg}: No such file or directory`, newPath: currentPath };
+          return { output: `grep: ${targetArg}: No such file or directory`, newPath: currentPath, scoreEvent: 'mistake' };
         }
 
         if (node.type === 'file') {
@@ -69,7 +69,7 @@ export function handleReadCommands(
         collectGrepMatches(node, targetPath, matcher, matches);
       }
 
-      return { output: matches.join('\n'), newPath: currentPath };
+      return { output: matches.join('\n'), newPath: currentPath, scoreEvent: 'success' };
     }
     default:
       return null;

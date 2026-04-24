@@ -20,10 +20,23 @@
   margin-left: 1rem;
 }
 .session-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
   font-weight: bold;
   font-size: 1.5rem;
   color: var(--primary-color);
   margin-right: 1rem;
+}
+.cash-balance {
+  line-height: 1.1;
+}
+.cash-multiplier {
+  margin-top: 0.25rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #ffffff;
+  line-height: 1;
 }
 .bashcash-main {
   flex: 1;

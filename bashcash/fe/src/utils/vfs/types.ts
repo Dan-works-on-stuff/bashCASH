@@ -20,5 +20,6 @@ export interface CommandResult {
   newPath: string;
   modal?: CommandModal;
   updatedVfs?: VFSNode;
+  scoreEvent?: 'success' | 'mistake' | 'none';
 }
 
