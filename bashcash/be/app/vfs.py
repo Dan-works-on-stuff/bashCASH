@@ -5,6 +5,11 @@ import datetime
 from typing import Dict, Any
 
 
+def is_editable_text_file(filename: str) -> bool:
+    normalized = filename.lower()
+    return normalized.endswith(".txt") or normalized.endswith(".sh")
+
+
 def parse_zip_to_vfs(base64_zip: str) -> Dict[str, Any]:
     zip_bytes = base64.b64decode(base64_zip)
     vfs = {
@@ -38,10 +43,20 @@ def parse_zip_to_vfs(base64_zip: str) -> Dict[str, Any]:
                 get_or_create_dir(parts, vfs)
             else:
                 parent_dir = get_or_create_dir(parts[:-1], vfs)
-                parent_dir.setdefault("children", []).append({
+                file_entry: Dict[str, Any] = {
                     "name": parts[-1],
                     "type": "file",
                     "size": file_size,
                     "modified": mod_time
-                })
+                }
+
+                if is_editable_text_file(parts[-1]):
+                    raw_content = zf.read(info.filename)
+                    try:
+                        file_entry["content"] = raw_content.decode("utf-8")
+                    except UnicodeDecodeError:
+                        # Keep non-UTF-8 text-like files visible in the tree without inline content.
+                        pass
+
+                parent_dir.setdefault("children", []).append(file_entry)
     return vfs

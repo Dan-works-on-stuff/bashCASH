@@ -3,16 +3,18 @@ import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
 import { VFSNode } from '../api/types';
-import { executeCommand } from '../utils/vfs';
+import { executeCommand } from '../utils/vfs/commands';
+import { CommandModal } from '../utils/vfs/types';
 
 interface TerminalProps {
   vfs: VFSNode | null;
   currentPath: string;
   onPathChange: (newPath: string) => void;
-  onModalOpen?: (modal: { type: 'image'; url: string; filename: string }) => void;
+  onVfsChange?: (nextVfs: VFSNode) => void;
+  onModalOpen?: (modal: CommandModal) => void;
 }
 
-export function TerminalUI({ vfs, currentPath, onPathChange, onModalOpen }: TerminalProps) {
+export function TerminalUI({ vfs, currentPath, onPathChange, onVfsChange, onModalOpen }: TerminalProps) {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<Terminal | null>(null);
   const inputBuffer = useRef<string>('');
@@ -48,13 +50,16 @@ export function TerminalUI({ vfs, currentPath, onPathChange, onModalOpen }: Term
             stateRef.current.currentPath, 
             cmd
         );
-        const { output, newPath, modal } = result;
+        const { output, newPath, modal, updatedVfs } = result;
         if (output) {
             if (cmd.trim() === 'clear') {
                 term.write(output);
             } else {
                 term.writeln(output);
             }
+        }
+        if (updatedVfs && onVfsChange) {
+          onVfsChange(updatedVfs);
         }
         if (modal && onModalOpen) {
           onModalOpen(modal);

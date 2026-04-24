@@ -25,6 +25,9 @@ def test_parse_vfs_success(make_zip_base64):
     body = response.json()
     assert body["vfs"]["name"] == "/"
     assert body["vfs"]["type"] == "directory"
+    folder = next(child for child in body["vfs"]["children"] if child["name"] == "folder")
+    file_node = next(child for child in folder["children"] if child["name"] == "file.txt")
+    assert file_node["content"] == "abc"
 
 
 def test_parse_vfs_invalid_zip_returns_error_contract():

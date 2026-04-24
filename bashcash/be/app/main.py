@@ -3,14 +3,15 @@ from __future__ import annotations
 import logging
 import time
 import uuid
-from typing import Any
+from typing import Any, cast
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from mangum import Mangum
 
-from app.schemas import ParseZipRequest, ParseZipResponse, VFSNode
+from app.schemas import ParseZipRequest, ParseZipResponse, SessionRecord, SessionSnapshot, VFSNode
+from app.sessions import delete_session, get_session_store, load_session, save_session
 from app.vfs import parse_zip_to_vfs
 
 logger = logging.getLogger("bashcash.api")
@@ -18,11 +19,11 @@ logger.setLevel(logging.INFO)
 
 app = FastAPI(title="BashCash API")
 
-app.add_middleware(  # type: ignore[arg-type]
-    CORSMiddleware,
+app.add_middleware(
+    cast(Any, CORSMiddleware),
     allow_origins=["*"],
     allow_credentials=False,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
     expose_headers=["x-request-id"],
 )
@@ -134,6 +135,56 @@ def parse_vfs(request: ParseZipRequest, raw_request: Request):
                 "message": "Invalid ZIP payload",
             },
         ) from exc
+
+
+@app.post('/v1/sessions/{session_id}', response_model=SessionRecord)
+def bootstrap_session(session_id: str, request: SessionSnapshot):
+    try:
+        return save_session(session_id, request, store=get_session_store())
+    except Exception as exc:
+        logger.exception('session_bootstrap_failed session_id=%s', session_id)
+        raise HTTPException(
+            status_code=500,
+            detail={
+                'error': 'session_store_error',
+                'message': 'Failed to save session snapshot',
+            },
+        ) from exc
+
+
+@app.get('/v1/sessions/{session_id}', response_model=SessionRecord)
+def get_session(session_id: str):
+    session = load_session(session_id, store=get_session_store())
+    if not session:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                'error': 'session_not_found',
+                'message': 'Session not found',
+            },
+        )
+    return session
+
+
+@app.put('/v1/sessions/{session_id}', response_model=SessionRecord)
+def upsert_session(session_id: str, request: SessionSnapshot):
+    try:
+        return save_session(session_id, request, store=get_session_store())
+    except Exception as exc:
+        logger.exception('session_upsert_failed session_id=%s', session_id)
+        raise HTTPException(
+            status_code=500,
+            detail={
+                'error': 'session_store_error',
+                'message': 'Failed to save session snapshot',
+            },
+        ) from exc
+
+
+@app.delete('/v1/sessions/{session_id}', status_code=204)
+def remove_session(session_id: str):
+    delete_session(session_id, store=get_session_store())
+    return Response(status_code=204)
 
 
 # Mangum wrapper for AWS Lambda

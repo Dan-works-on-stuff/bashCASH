@@ -12,10 +12,12 @@ describe('createDefaultVfs', () => {
 
     const son1 = vfs.children?.[0];
     expect(son1?.children?.[0]?.name).toBe('grandson1.txt');
+    expect(son1?.children?.[0]?.content).toBe('');
 
     const son2Nested = vfs.children?.[1]?.children?.[0];
     expect(son2Nested?.name).toBe('nested');
     expect(son2Nested?.children?.[0]?.name).toBe('worker.sh');
+    expect(son2Nested?.children?.[0]?.content).toContain('Running worker task');
 
     const son3File = vfs.children?.[2]?.children?.[0];
     expect(son3File?.name).toBe('unemployed.png');
