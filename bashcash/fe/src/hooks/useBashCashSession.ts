@@ -2,11 +2,11 @@ import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
 import { deleteSession, getSession, parseZip, saveSession } from '../api/client';
 import { SessionSnapshot, VFSNode } from '../api/types';
 import createDefaultVfs from '../utils/defaultVfs';
-// @ts-ignore
 import { updateFileContent } from '../utils/vfs';
 import { CommandModal } from '../utils/vfs/types';
 
 const SESSION_STORAGE_KEY = 'bashcash.session-id';
+const SESSION_SNAPSHOT_STORAGE_PREFIX = 'bashcash.session-snapshot:';
 
 function createSessionId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -37,18 +37,54 @@ function rotateSessionId(): string {
   return nextId;
 }
 
+function sessionSnapshotStorageKey(sessionId: string): string {
+  return `${SESSION_SNAPSHOT_STORAGE_PREFIX}${sessionId}`;
+}
+
+function readCachedSessionSnapshot(sessionId: string): SessionSnapshot | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const raw = window.localStorage.getItem(sessionSnapshotStorageKey(sessionId));
+  if (!raw) return null;
+
+  try {
+    return JSON.parse(raw) as SessionSnapshot;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedSessionSnapshot(sessionId: string, snapshot: SessionSnapshot): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.localStorage.setItem(sessionSnapshotStorageKey(sessionId), JSON.stringify(snapshot));
+}
+
+function clearCachedSessionSnapshot(sessionId: string): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.localStorage.removeItem(sessionSnapshotStorageKey(sessionId));
+}
+
 export function useBashCashSession() {
-  const [vfs, setVfs] = useState<VFSNode | null>(null);
-  const [currentPath, setCurrentPath] = useState<string>('/');
+  const [sessionId, setSessionId] = useState(() => getOrCreateSessionId());
+  const [vfs, setVfs] = useState<VFSNode | null>(() => readCachedSessionSnapshot(sessionId)?.vfs ?? null);
+  const [currentPath, setCurrentPath] = useState<string>(() => readCachedSessionSnapshot(sessionId)?.current_path ?? '/');
   const [isLoading, setIsLoading] = useState(false);
   const [isRestoringSession, setIsRestoringSession] = useState(true);
   const [isResettingSession, setIsResettingSession] = useState(false);
   const [error, setError] = useState('');
   const [modal, setModal] = useState<CommandModal | null>(null);
-  const [sessionId, setSessionId] = useState(() => getOrCreateSessionId());
 
   const persistSession = useCallback(
     async (snapshot: SessionSnapshot) => {
+      writeCachedSessionSnapshot(sessionId, snapshot);
       try {
         await saveSession(sessionId, snapshot);
       } catch (err: any) {
@@ -65,8 +101,16 @@ export function useBashCashSession() {
       setIsRestoringSession(true);
       try {
         const savedSession = await getSession(sessionId);
-        if (cancelled || !savedSession) {
-          if (!cancelled) {
+        if (cancelled) {
+          return;
+        }
+
+        if (!savedSession) {
+          const fallbackSession = readCachedSessionSnapshot(sessionId);
+          if (fallbackSession) {
+            setVfs(fallbackSession.vfs);
+            setCurrentPath(fallbackSession.current_path);
+          } else {
             setVfs(null);
             setCurrentPath('/');
           }
@@ -75,9 +119,19 @@ export function useBashCashSession() {
 
         setVfs(savedSession.vfs);
         setCurrentPath(savedSession.current_path);
+        writeCachedSessionSnapshot(sessionId, {
+          vfs: savedSession.vfs,
+          current_path: savedSession.current_path,
+        });
       } catch (err: any) {
         if (!cancelled) {
-          setError(err.message || 'Failed to restore session');
+          const fallbackSession = readCachedSessionSnapshot(sessionId);
+          if (fallbackSession) {
+            setVfs(fallbackSession.vfs);
+            setCurrentPath(fallbackSession.current_path);
+          } else {
+            setError(err.message || 'Failed to restore session');
+          }
         }
       } finally {
         if (!cancelled) {
@@ -97,41 +151,46 @@ export function useBashCashSession() {
     (nextPath: string) => {
       setCurrentPath(nextPath);
       if (vfs) {
-        void persistSession({
+        const snapshot = {
           vfs,
           current_path: nextPath,
-        });
+        };
+        writeCachedSessionSnapshot(sessionId, snapshot);
+        void persistSession(snapshot);
       }
     },
-    [persistSession, vfs],
+    [persistSession, sessionId, vfs],
   );
 
   const handleVfsChange = useCallback(
     (nextVfs: VFSNode) => {
       setVfs(nextVfs);
-      void persistSession({
+      const snapshot = {
         vfs: nextVfs,
         current_path: currentPath,
-      });
+      };
+      writeCachedSessionSnapshot(sessionId, snapshot);
+      void persistSession(snapshot);
     },
-    [currentPath, persistSession],
+    [currentPath, persistSession, sessionId],
   );
 
-  const handleNewSession = useCallback(async () => {
+  const handleNewSession = useCallback(() => {
     setError('');
     setIsResettingSession(true);
 
-    try {
-      await deleteSession(sessionId);
-      setModal(null);
-      setVfs(null);
-      setCurrentPath('/');
-      setSessionId(rotateSessionId());
-    } catch (err: any) {
-      setError(err.message || 'Failed to reset session');
-    } finally {
-      setIsResettingSession(false);
-    }
+    const previousSessionId = sessionId;
+
+    clearCachedSessionSnapshot(previousSessionId);
+    setModal(null);
+    setVfs(null);
+    setCurrentPath('/');
+    setSessionId(rotateSessionId());
+    setIsResettingSession(false);
+
+    void Promise.resolve(deleteSession(previousSessionId)).catch((err: any) => {
+      console.warn('[bashcash] deleteSession during reset failed', err);
+    });
   }, [sessionId]);
 
   const handleEditorSave = useCallback(
@@ -146,12 +205,14 @@ export function useBashCashSession() {
         return { ...prev, content };
       });
 
-      void persistSession({
+      const snapshot = {
         vfs: nextVfs,
         current_path: currentPath,
-      });
+      };
+      writeCachedSessionSnapshot(sessionId, snapshot);
+      void persistSession(snapshot);
     },
-    [currentPath, persistSession, vfs],
+    [currentPath, persistSession, sessionId, vfs],
   );
 
   const startWithDefaultFolder = useCallback(() => {
@@ -160,45 +221,52 @@ export function useBashCashSession() {
     const defaultVfs = createDefaultVfs();
     setVfs(defaultVfs);
     setCurrentPath('/');
-    void persistSession({
+    const snapshot = {
       vfs: defaultVfs,
       current_path: '/',
-    });
-  }, [persistSession]);
+    };
+    writeCachedSessionSnapshot(sessionId, snapshot);
+    void persistSession(snapshot);
+  }, [persistSession, sessionId]);
 
-  const handleFileUpload = useCallback((event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    setIsLoading(true);
-    setError('');
-    const reader = new FileReader();
-    reader.onload = async (loadEvent) => {
-      try {
-        const result = loadEvent.target?.result as string;
-        const base64Data = result.split(',')[1];
-        if (!base64Data) {
-          setError('Failed to read file as base64');
-          return;
+  const handleFileUpload = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      setIsLoading(true);
+      setError('');
+      const reader = new FileReader();
+      reader.onload = async (loadEvent) => {
+        try {
+          const result = loadEvent.target?.result as string;
+          const base64Data = result.split(',')[1];
+          if (!base64Data) {
+            setError('Failed to read file as base64');
+            return;
+          }
+          const response = await parseZip(base64Data);
+          setVfs(response.vfs);
+          setCurrentPath('/');
+          const snapshot = {
+            vfs: response.vfs,
+            current_path: '/',
+          };
+          writeCachedSessionSnapshot(sessionId, snapshot);
+          void persistSession(snapshot);
+        } catch (err: any) {
+          setError(err.message || 'An error occurred');
+        } finally {
+          setIsLoading(false);
         }
-        const response = await parseZip(base64Data);
-        setVfs(response.vfs);
-        setCurrentPath('/');
-        void persistSession({
-          vfs: response.vfs,
-          current_path: '/',
-        });
-      } catch (err: any) {
-        setError(err.message || 'An error occurred');
-      } finally {
+      };
+      reader.onerror = () => {
+        setError('Failed to read file');
         setIsLoading(false);
-      }
-    };
-    reader.onerror = () => {
-      setError('Failed to read file');
-      setIsLoading(false);
-    };
-    reader.readAsDataURL(file);
-  }, [persistSession]);
+      };
+      reader.readAsDataURL(file);
+    },
+    [persistSession, sessionId],
+  );
 
   return {
     vfs,
@@ -218,4 +286,3 @@ export function useBashCashSession() {
     setModal,
   };
 }
-
