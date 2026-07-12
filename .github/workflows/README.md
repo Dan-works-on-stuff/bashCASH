@@ -1,6 +1,6 @@
 # GitHub Actions Workflows
 
-This directory contains the CI/CD pipelines that run automatically when you push code or open pull requests.
+This directory contains the CI/CD pipelines for BashCash.
 
 ## What is GitHub Actions?
 
@@ -56,8 +56,8 @@ Runs the test suites for both the backend and frontend using `vitest`. If any te
 
 | Step | What it does |
 |------|-------------|
-| Install & Test Backend | `npm install && npm test` in `deaddrop/be/` — runs ID generation and validation schema tests |
-| Install & Test Frontend | `npm install && npm test` in `deaddrop/fe/` — runs API client tests |
+| Install & Test Backend | `npm install && npm test` in `bashcash/be/` — runs BashCash backend tests |
+| Install & Test Frontend | `npm install && npm test` in `bashcash/fe/` — runs BashCash frontend tests |
 
 #### Job 2: `terraform-plan` — Preview Infrastructure Changes
 

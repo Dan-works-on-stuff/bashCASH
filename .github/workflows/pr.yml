@@ -20,11 +20,11 @@ jobs:
           node-version: "24"
 
       - name: Install & Test Backend
-        working-directory: deaddrop/be
+        working-directory: bashcash/be
         run: npm install && npm test
 
       - name: Install & Test Frontend
-        working-directory: deaddrop/fe
+        working-directory: bashcash/fe
         run: npm install && npm test
 
   terraform-plan:

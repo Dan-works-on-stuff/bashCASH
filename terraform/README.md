@@ -1,6 +1,6 @@
-# Terraform Infrastructure
+# Terraform Infrastructure — BashCash
 
-This document explains the Terraform setup for the projects in this repository.
+This document explains the Terraform setup for BashCash in this repository.
 
 ## What is Terraform?
 
@@ -13,7 +13,7 @@ The key idea: **you declare _what_ you want, not _how_ to create it**. Terraform
 ```
 terraform/
 ├── main.tf                          # Provider config, backend, shared locals
-├── deaddrop_project.tf              # Wires modules together for the Dead Drop app
+├── bashcash_project.tf               # Wires the BashCash app modules together
 │
 ├── modules/
 │   ├── cloudfront-spa/              # Reusable module: hosts any SPA on CloudFront + S3
@@ -26,19 +26,15 @@ terraform/
 │   │   ├── main.tf                  # (empty, placeholder)
 │   │   └── scripts/build.js         # Helper: runs build commands during plan
 │   │
-│   └── deaddrop-backend/            # Module: entire serverless backend
-│       ├── variables.tf             # Inputs (project name, domain, emails, etc.)
+│   └── bashcash-backend/            # Module: BashCash backend
+│       ├── variables.tf             # Inputs (project name, domain, email, etc.)
 │       ├── versions.tf              # Required providers + data sources
-│       ├── build.tf                 # Compiles TypeScript → zips for Lambda
-│       ├── lambda.tf                # 4 Lambda functions + event wiring
-│       ├── iam.tf                   # IAM roles & permissions (one per Lambda)
+│       ├── build.tf                 # Compiles Python → packages Lambda zip
+│       ├── lambda.tf                # API Lambda + event wiring
+│       ├── iam.tf                   # IAM roles & permissions
 │       ├── api_gateway.tf           # HTTP API + custom domain + routes
 │       ├── acm.tf                   # SSL certificate for the API domain
-│       ├── dynamodb.tf              # Secrets table with TTL + streams
-│       ├── kms.tf                   # Encryption key for secrets at rest
-│       ├── sqs.tf                   # Delete queue + dead letter queue
-│       ├── sns.tf                   # Notification topic
-│       ├── ses.tf                   # Email sending (domain verification + DKIM)
+│       ├── dynamodb.tf              # Session table with TTL
 │       ├── cloudwatch.tf            # Log groups + useful log queries
 │       └── scripts/build.js         # Helper: runs build commands during plan
 ```
@@ -50,14 +46,14 @@ Here's the 10,000-foot view of what gets created:
 ```
                     ┌─────────────────────────────────────────┐
                     │            CloudFront (CDN)              │
-User ──HTTPS──────► │  deaddrop.your-name.example.com          │
+User ──HTTPS──────► │  bashcash.your-name.example.com           │
                     │         ↓ serves static files            │
                     │      S3 Bucket (React app)               │
                     └─────────────────────────────────────────┘
 
                     ┌─────────────────────────────────────────┐
                     │           API Gateway (HTTP)             │
-User ──HTTPS──────► │ api.deaddrop.your-name.example.com       │
+User ──HTTPS──────► │ api.bashcash.your-name.example.com       │
                     │         ↓ proxies to                     │
                     │    Lambda: API (Hono app)                 │
                     │         ↓ writes to                      │
@@ -100,7 +96,7 @@ Key concepts:
 - **`locals`** — reusable values (like constants in programming)
 - **`data "aws_route53_zone"`** — a _data source_ reads existing resources. This looks up your hosted zone (DNS) that was already created outside Terraform.
 
-### `deaddrop_project.tf` — Wiring It Together
+### `bashcash_project.tf` — Wiring It Together
 
 This file **calls the modules** — it's like calling functions with arguments. It passes your identifier, domain names, and paths into each module.
 
@@ -154,11 +150,11 @@ Terraform keeps a **state file** (`terraform.tfstate`) that maps your `.tf` code
 
 📖 See [modules/cloudfront-spa/README.md](modules/cloudfront-spa/README.md) for details.
 
-## Module: `deaddrop-backend`
+## Module: `bashcash-backend`
 
-**Purpose:** Deploy the entire serverless backend — API, database, encryption, queues, notifications.
+**Purpose:** Deploy the BashCash backend — API, session store, and supporting AWS resources.
 
-📖 See [modules/deaddrop-backend/README.md](modules/deaddrop-backend/README.md) for details.
+📖 See [modules/bashcash-backend/README.md](modules/bashcash-backend/README.md) for details.
 
 ---
 

@@ -10,7 +10,7 @@ variable "environment" {
 }
 
 variable "domain_name" {
-  description = "Custom domain for the API (e.g. api.deaddrop.example.com)"
+  description = "Custom domain for the API (e.g. api.bashcash.example.com)"
   type        = string
 }
 
@@ -49,6 +49,6 @@ variable "mail_from_subdomain" {
 }
 
 variable "source_path" {
-  description = "Absolute path to the backend source directory (deaddrop/be)"
+  description = "Absolute path to the backend source directory (bashcash/be)"
   type        = string
 }
