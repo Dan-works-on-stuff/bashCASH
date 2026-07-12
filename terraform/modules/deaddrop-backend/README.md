@@ -24,7 +24,7 @@ A Terraform module that deploys the **entire serverless backend** for the Dead D
 ```
                   ┌───────────────────────────────────────────────────┐
                   │                 API Gateway                       │
- HTTPS request ──►│  api.deaddrop.{name}.fiipractic-2026.ro          │
+ HTTPS request ──►│  api.deaddrop.{name}.example.com                 │
                   │         │                                         │
                   │         ▼                                         │
                   │    ┌─────────┐     ┌──────────┐    ┌─────────┐  │
@@ -75,9 +75,9 @@ module "deaddrop_backend" {
   source             = "./modules/deaddrop-backend"
   project_name       = "my-deaddrop-backend"
   source_path        = "${path.module}/../deaddrop/be"
-  ses_sender_email   = "noreply@my-name.fiipractic-2026.ro"
+  ses_sender_email   = "noreply@my-name.example.com"
   ses_sandbox_emails = ["my-email@gmail.com"]
-  domain_name        = "api.deaddrop.my-name.fiipractic-2026.ro"
+  domain_name        = "api.deaddrop.my-name.example.com"
   hosted_zone_id     = data.aws_route53_zone.my_zone.id
 }
 ```

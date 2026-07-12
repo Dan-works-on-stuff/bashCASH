@@ -2,7 +2,7 @@
 module "bashcash_frontend" {
   source              = "./modules/cloudfront-spa"
   project_name        = "${local.resource_identifier}-bashcash-fp-fe"
-  domain_name         = "bashcash.${local.resource_identifier}.fiipractic-2026.ro"
+  domain_name         = "bashcash.${local.resource_identifier}.example.com"
   hosted_zone_id      = data.aws_route53_zone.main_hosted_zone.id
   project_description = "BashCash SPA"
   build_command       = "npm install && npm run build"
@@ -21,8 +21,7 @@ module "bashcash_backend" {
   source           = "./modules/bashcash-backend"
   project_name     = "${local.resource_identifier}-bashcash-fp-be"
   source_path      = "${path.module}/../bashcash/be"
-  domain_name      = "api.bashcash.${local.resource_identifier}.fiipractic-2026.ro"
+  domain_name      = "api.bashcash.${local.resource_identifier}.example.com"
   hosted_zone_id   = data.aws_route53_zone.main_hosted_zone.id
-  ses_sender_email = "noreply@${local.resource_identifier}.fiipractic-2026.ro"
+  ses_sender_email = "noreply@${local.resource_identifier}.example.com"
 }
-

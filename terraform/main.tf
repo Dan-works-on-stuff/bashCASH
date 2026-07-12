@@ -6,7 +6,7 @@ terraform {
     }
   }
   backend "s3" {
-    bucket = "radu-dan-stefan-fiipractic-terraform-state-bucket"
+    bucket = "personal-project-terraform-state-bucket"
     key    = "terraform.tfstate"
     region = "eu-central-1"
   }
@@ -23,12 +23,12 @@ provider "aws" {
 }
 
 locals {
-  resource_identifier = "radu-dan-stefan"
+  resource_identifier = "your-name"
   personal_email_addresses = [
-    "radudan610@gmail.com",
+    "your-email@example.com",
   ]
 }
 
 data "aws_route53_zone" "main_hosted_zone" {
-  name = "${local.resource_identifier}.fiipractic-2026.ro"
+  name = "${local.resource_identifier}.example.com"
 }

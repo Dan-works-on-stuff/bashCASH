@@ -17,7 +17,7 @@ A Terraform module that deploys the **serverless backend** for the BashCash appl
 ```
                   ┌───────────────────────────────────────────────────┐
                   │                 API Gateway                       │
- HTTPS request ──►│  api.bashcash.{name}.fiipractic-2026.ro          │
+ HTTPS request ──►│  api.bashcash.{name}.example.com                │
                   │         │                                         │
                   │         ▼                                         │
                   │    ┌─────────┐     ┌──────────┐                   │
@@ -41,7 +41,7 @@ module "bashcash_backend" {
   source             = "./modules/bashcash-backend"
   project_name       = "my-bashcash-backend"
   source_path        = "${path.module}/../bashcash/be"
-  domain_name        = "api.bashcash.my-name.fiipractic-2026.ro"
+  domain_name        = "api.bashcash.my-name.example.com"
   hosted_zone_id     = data.aws_route53_zone.main_hosted_zone.id
 }
 ```

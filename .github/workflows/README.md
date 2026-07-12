@@ -1,6 +1,6 @@
 # GitHub Actions Workflows
 
-This directory contains the **CI/CD pipelines** that run automatically when you push code or open pull requests. They live in `.github/workflows/` because that's where GitHub looks for workflow definitions.
+This directory contains the CI/CD pipelines that run automatically when you push code or open pull requests.
 
 ## What is GitHub Actions?
 

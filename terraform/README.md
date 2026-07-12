@@ -1,6 +1,6 @@
-# Terraform Infrastructure — Dead Drop
+# Terraform Infrastructure
 
-This document explains the entire Terraform setup for the Dead Drop project. It's written for students who are new to Terraform (and possibly new to infrastructure-as-code in general).
+This document explains the Terraform setup for the projects in this repository.
 
 ## What is Terraform?
 
@@ -50,14 +50,14 @@ Here's the 10,000-foot view of what gets created:
 ```
                     ┌─────────────────────────────────────────┐
                     │            CloudFront (CDN)              │
-User ──HTTPS──────► │  deaddrop.your-name.fiipractic-2026.ro  │
+User ──HTTPS──────► │  deaddrop.your-name.example.com          │
                     │         ↓ serves static files            │
                     │      S3 Bucket (React app)               │
                     └─────────────────────────────────────────┘
 
                     ┌─────────────────────────────────────────┐
                     │           API Gateway (HTTP)             │
-User ──HTTPS──────► │ api.deaddrop.your-name.fiipractic-2026.ro│
+User ──HTTPS──────► │ api.deaddrop.your-name.example.com       │
                     │         ↓ proxies to                     │
                     │    Lambda: API (Hono app)                 │
                     │         ↓ writes to                      │
@@ -102,7 +102,7 @@ Key concepts:
 
 ### `deaddrop_project.tf` — Wiring It Together
 
-This file **calls the modules** — it's like calling functions with arguments. It passes your identifier, domain names, and paths into each module. Currently commented out (you'll uncomment it during the workshop).
+This file **calls the modules** — it's like calling functions with arguments. It passes your identifier, domain names, and paths into each module.
 
 Key concept:
 - **`module` blocks** are like function calls. `source` is the function, and the other fields are arguments.
@@ -173,7 +173,7 @@ terraform fmt       # Auto-format your .tf files
 terraform validate  # Check syntax without touching AWS
 ```
 
-## Tips for the Workshop
+## Tips for deployment
 
 1. **Always run `plan` before `apply`** — read the output carefully
 2. **One change at a time** — uncomment one module, apply, verify, then move on

@@ -1,97 +1,37 @@
-# Dead Drop
+# Personal Projects
 
-A self-destructing secret sharing app built for the **FII Practic 2026** workshop series. Create an encrypted secret, share a link, and it self-destructs after one view.
+This repository contains two personal projects I built and am publishing under my own GitHub account:
 
-## How It Works
+- **BashCash** — a browser-based simulated POSIX terminal with a virtual file system
+- **Dead Drop** — a self-destructing secret-sharing app with AWS infrastructure
 
-1. You write a secret and set a password + expiration (1h / 24h / 7d)
-2. The app gives you a shareable link
-3. The recipient opens the link, enters the password, and sees the secret
-4. The secret is permanently deleted after being viewed (or when it expires)
+## What’s in the repo
 
-## Project Structure
+| Path | Purpose |
+|------|---------|
+| `bashcash/` | BashCash app source, tests, and docs |
+| `deaddrop/` | Dead Drop app source, tests, and docs |
+| `terraform/` | Shared AWS infrastructure for both projects |
+| `.github/workflows/` | CI/CD pipelines and workflow docs |
 
-```
-.
-├── deaddrop/
-│   ├── fe/                  # React frontend (Vite + TypeScript)
-│   └── be/                  # Serverless backend (Hono + Lambda + TypeScript)
-│
-├── terraform/               # Infrastructure as Code (AWS)
-│   ├── main.tf              # Provider config, backend, shared variables
-│   ├── deaddrop_project.tf  # Wires frontend + backend modules together
-│   └── modules/
-│       ├── cloudfront-spa/  # Reusable module: deploy any SPA to CloudFront + S3
-│       └── deaddrop-backend/# Backend: Lambda, DynamoDB, KMS, SQS, SNS, SES
-│
-├── .github/workflows/       # CI/CD pipelines
-│   ├── deploy.yml           # Auto-deploy on push to main
-│   └── pr.yml               # Tests + Terraform plan on pull requests
-│
-└── clean.sh                 # Utility: cleans build artifacts
-```
+## Project Highlights
 
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Frontend | React 19, TypeScript, Vite, React Router |
-| Backend | Hono (on AWS Lambda), TypeScript, esbuild |
-| Database | DynamoDB (with TTL for auto-expiry) |
-| Encryption | AWS KMS |
-| Email | AWS SES (notifications on view/expiry) |
-| CDN | CloudFront + S3 |
-| DNS/TLS | Route 53 + ACM |
-| Queues | SQS (deletion) + SNS (notifications) |
-| CI/CD | GitHub Actions |
-| IaC | Terraform |
+| Project | Stack |
+|---------|-------|
+| BashCash | React 19, TypeScript, Vite, FastAPI, DynamoDB, Terraform |
+| Dead Drop | TypeScript, Hono, Lambda, DynamoDB, KMS, SQS, SNS, SES, Terraform |
 
 ## Documentation
 
 | Document | What it covers |
 |----------|---------------|
-| [terraform/README.md](terraform/README.md) | Terraform overview, project structure, key concepts, commands |
-| [terraform/modules/cloudfront-spa/README.md](terraform/modules/cloudfront-spa/README.md) | CloudFront + S3 module: file-by-file breakdown |
-| [terraform/modules/deaddrop-backend/README.md](terraform/modules/deaddrop-backend/README.md) | Serverless backend module: file-by-file breakdown |
-| [.github/workflows/README.md](.github/workflows/README.md) | CI/CD pipelines: what they do and how they work |
+| [bashcash/README.md](bashcash/README.md) | BashCash overview |
+| [terraform/README.md](terraform/README.md) | Terraform setup and module breakdown |
+| [terraform/modules/cloudfront-spa/README.md](terraform/modules/cloudfront-spa/README.md) | Reusable SPA deployment module |
+| [terraform/modules/bashcash-backend/README.md](terraform/modules/bashcash-backend/README.md) | BashCash backend module |
+| [terraform/modules/deaddrop-backend/README.md](terraform/modules/deaddrop-backend/README.md) | Dead Drop backend module |
+| [.github/workflows/README.md](.github/workflows/README.md) | CI/CD workflow docs |
 
-## Getting Started
+## Local development
 
-### Prerequisites
-
-- Node.js 24+
-- Terraform
-- AWS CLI configured with your credentials
-- Your AWS secrets set up in GitHub repo settings
-
-### Local Development
-
-```bash
-# Frontend
-cd deaddrop/fe
-npm install
-npm run dev          # Starts on http://localhost:5173
-
-# Backend (requires AWS credentials for KMS, DynamoDB, etc.)
-cd deaddrop/be
-npm install
-npm run build
-```
-
-### Deploy
-
-Infrastructure deploys automatically when you push to `main`. To deploy manually:
-
-```bash
-cd terraform
-terraform init
-terraform plan       # Review changes
-terraform apply      # Apply changes
-```
-
-### Run Tests
-
-```bash
-cd deaddrop/be && npm test    # Backend: ID generation, validation schemas
-cd deaddrop/fe && npm test    # Frontend: API client tests
-```
+Each app has its own frontend and backend commands in its folder. Start with the app README, then follow the Terraform docs if you want to deploy the AWS resources.
